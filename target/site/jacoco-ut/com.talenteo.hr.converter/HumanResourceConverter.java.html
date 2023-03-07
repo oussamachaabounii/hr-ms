@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HumanResourceConverter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">hr-ms</a> &gt; <a href="index.source.html" class="el_package">com.talenteo.hr.converter</a> &gt; <span class="el_source">HumanResourceConverter.java</span></div><h1>HumanResourceConverter.java</h1><pre class="source lang-java linenums">package com.talenteo.hr.converter;
+
+
+import com.talenteo.hr.dto.HumanResourceDto;
+import com.talenteo.hr.model.entity.HumanResource;
+import lombok.Data;
+import org.checkerframework.checker.nullness.Opt;
+import org.springframework.core.convert.converter.Converter;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+<span class="pc bnc" id="L13" title="All 6 branches missed.">@Data(staticConstructor = &quot;newInstance&quot;)</span>
+public class HumanResourceConverter implements Converter&lt;HumanResource, HumanResourceDto&gt; {
+    @Override
+    public HumanResourceDto convert(HumanResource humanResource) {
+<span class="pc bpc" id="L17" title="1 of 2 branches missed.">        if (Objects.isNull(humanResource)) {</span>
+<span class="nc" id="L18">            return null;</span>
+        }
+<span class="fc" id="L20">        List&lt;String&gt; nationalities = humanResource.getNationalities().stream().map(nationality -&gt; nationality.getCountry()).collect(Collectors.toList());</span>
+
+<span class="fc" id="L22">        return HumanResourceDto.builder()</span>
+<span class="fc" id="L23">                .id(humanResource.getId())</span>
+<span class="fc" id="L24">                .firstname(humanResource.getFirstname())</span>
+<span class="fc" id="L25">                .lastname(humanResource.getLastname())</span>
+<span class="fc" id="L26">                .email(humanResource.getEmail())</span>
+<span class="fc" id="L27">                .gender(humanResource.getGender())</span>
+<span class="fc" id="L28">                .avatar(humanResource.getAvatar())</span>
+<span class="fc" id="L29">                .role(humanResource.getRole())</span>
+<span class="fc" id="L30">                .birthDate(humanResource.getBirthDate())</span>
+<span class="fc" id="L31">                .phoneNumber(humanResource.getPhoneNumber())</span>
+<span class="fc" id="L32">                .nationalities(nationalities)</span>
+<span class="fc" id="L33">                .address(AddressConverter.newInstance().convert(humanResource.getAddress()))</span>
+<span class="fc" id="L34">                .visibility(humanResource.getVisibility())</span>
+<span class="fc" id="L35">                .supervisorId(Optional.ofNullable(humanResource.getSupervisor()).map(HumanResource::getId).orElse(null))</span>
+<span class="fc" id="L36">                .companyEntity(CompanyEntityConverter.newInstance().convert(humanResource.getCompanyEntity()))</span>
+<span class="fc" id="L37">                .alreadyLoggedIn(humanResource.isAlreadyLoggedIn())</span>
+                //.salaryHistory(humanResource.getSalaryHistory().stream().map(salHis -&gt;
+                //       SalaryHistoryConverter.newInstance().convert(salHis)).collect(Collectors.toList()))
+<span class="fc" id="L40">                .salaryHistory(Optional.ofNullable(humanResource.getSalaryHistory()).map(salaryHistories -&gt; salaryHistories.stream().map(salHis -&gt;</span>
+<span class="fc" id="L41">                    SalaryHistoryConverter.newInstance().convert(salHis)).collect(Collectors.toList())).orElse(Collections.EMPTY_LIST))</span>
+<span class="fc" id="L42">.isActive(humanResource.isActive())</span>
+<span class="fc" id="L43">                .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

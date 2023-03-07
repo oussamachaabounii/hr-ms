@@ -1,0 +1,621 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HumanResourceService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">hr-ms</a> &gt; <a href="index.source.html" class="el_package">com.talenteo.hr.service</a> &gt; <span class="el_source">HumanResourceService.java</span></div><h1>HumanResourceService.java</h1><pre class="source lang-java linenums">package com.talenteo.hr.service;
+
+import com.easyms.mail.domain.Mail;
+import com.talenteo.career.dto.AssessmentCampaignDto;
+import com.talenteo.career.dto.BiAnnualAssessmentDto;
+import com.talenteo.career.dto.CareerDto;
+import com.talenteo.common.security.SecurityUtils;
+import com.talenteo.common.utils.AzureBlobStorageUtils;
+import com.talenteo.hr.client.CareerMsClient;
+import com.talenteo.hr.client.MissionMsClient;
+import com.talenteo.hr.client.TdMsClient;
+import com.talenteo.hr.config.HrProperties;
+import com.talenteo.hr.converter.AddressDtoConverter;
+import com.talenteo.hr.converter.HumanResourceConverter;
+import com.talenteo.hr.converter.HumanResourceLightConverter;
+import com.talenteo.hr.converter.HumanResourceRequestConverter;
+import com.talenteo.hr.dto.*;
+import com.talenteo.hr.model.entity.*;
+import com.talenteo.hr.repository.HumanResourceRepository;
+import com.talenteo.hr.repository.NationalityRepository;
+import com.talenteo.hr.repository.VerificationTokenRepository;
+import com.talenteo.notification.dto.Type;
+import com.talenteo.td.dto.TechnicalDocumentDto;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FilenameUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.sql.Timestamp;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
+
+<span class="fc" id="L48">@Slf4j</span>
+@Component
+<span class="fc" id="L50">@AllArgsConstructor</span>
+public class HumanResourceService {
+
+    private final HumanResourceRepository humanResourceRepository;
+    private final OAuthRemote oAuthRemote;
+    private final VerificationTokenRepository verificationTokenRepository;
+    private final NotificationRemote notificationRemote;
+    private final SearchRemote searchRemote;
+    private final NationalityRepository nationalityRepository;
+
+    private final AzureBlobStorageUtils azureBlobStorageUtils;
+
+    private final HumanResourceRequestConverter humanResourceRequestConverter;
+    private final PasswordEncoder passwordEncoder;
+    private final HrProperties hrProperties;
+    private final CareerMsClient careerMsClient;
+    private final TdMsClient tdMsClient;
+    private final MissionMsClient missionMsClient;
+
+    public Optional&lt;HumanResourceDto&gt; getByEmail(String email) {
+<span class="fc" id="L70">        Optional&lt;HumanResource&gt; hr = humanResourceRepository.findByEmail(email);</span>
+<span class="fc" id="L71">        return hr.map(cl -&gt; HumanResourceConverter.newInstance().convert(cl));</span>
+    }
+
+    public Optional&lt;HumanResourceDto&gt; getHrById(Long id) {
+<span class="fc" id="L75">        Optional&lt;HumanResource&gt; hr = humanResourceRepository.findById(id);</span>
+<span class="fc" id="L76">        return hr.map(cl -&gt; HumanResourceConverter.newInstance().convert(cl));</span>
+    }
+
+    public Optional&lt;HumanResourceLightDto&gt; getLightHrById(Long id) {
+<span class="nc" id="L80">        Optional&lt;HumanResource&gt; hr = humanResourceRepository.findById(id);</span>
+<span class="nc" id="L81">        return hr.map(cl -&gt; HumanResourceLightConverter.newInstance().convert(cl));</span>
+    }
+
+    public Optional&lt;HumanResourceDto&gt; getCompanyAdminByCompany(Long companyId) {
+<span class="nc" id="L85">        Optional&lt;HumanResource&gt; companyAdminByCompany = humanResourceRepository.getCompanyAdminByCompany(companyId);</span>
+<span class="nc" id="L86">        return companyAdminByCompany.map(cl -&gt; HumanResourceConverter.newInstance().convert(cl));</span>
+    }
+
+    public HumanResourceDto createManager(HumanResourceRequest humanResourceRequest, String language) {
+<span class="nc" id="L90">        HumanResource hr = humanResourceRequestConverter.convert(humanResourceRequest);</span>
+<span class="nc" id="L91">        hr.setRole(Role.Manager);</span>
+<span class="nc" id="L92">        hr.setActive(true);</span>
+<span class="nc" id="L93">        HumanResource humanResource = humanResourceRepository.save(hr);</span>
+
+        /** send email **/
+<span class="nc" id="L96">        String cryptedPassword = sendMailtoCreatedHr(humanResource, language);</span>
+
+        /** create oauth secure user **/
+<span class="nc" id="L99">        createOauthUser(humanResource, cryptedPassword);</span>
+
+<span class="nc" id="L101">        return HumanResourceConverter.newInstance().convert(humanResource);</span>
+    }
+
+    public HumanResourceDto createRecruiter(HumanResourceRequest humanResourceRequest) {
+<span class="nc" id="L105">        HumanResource hr = humanResourceRequestConverter.convert(humanResourceRequest);</span>
+<span class="nc" id="L106">        hr.setRole(Role.Recruiter);</span>
+<span class="nc" id="L107">        hr.setActive(true);</span>
+<span class="nc" id="L108">        HumanResource humanResource = humanResourceRepository.save(hr);</span>
+
+<span class="nc" id="L110">        return HumanResourceConverter.newInstance().convert(humanResource);</span>
+    }
+
+    public HumanResourceDto confirmRegistration(String confirmationToken) {
+<span class="nc" id="L114">        HumanResource humanResource = oAuthRemote.confirmRegistration(confirmationToken);</span>
+<span class="nc" id="L115">        return HumanResourceConverter.newInstance().convert(humanResource);</span>
+    }
+
+
+    public String getCurrentUserEmail() {
+<span class="nc" id="L120">        return SecurityUtils.getCurrentUserId();</span>
+    }
+
+    /**
+     * Create a new consultant
+     *
+     * @param humanResourceRequest
+     * @return
+     */
+    public HumanResourceDto createConsultant(HumanResourceRequest humanResourceRequest, String language) {
+        /** save consultant **/
+<span class="fc" id="L131">        HumanResource hr = humanResourceRequestConverter.convert(humanResourceRequest);</span>
+<span class="fc" id="L132">        hr.setActive(true);</span>
+<span class="fc" id="L133">        HumanResource humanResource = humanResourceRepository.save(hr);</span>
+        /** Elastic Search **/
+<span class="fc" id="L135">        indexElasticSearch(humanResource);</span>
+        /** send email **/
+<span class="fc" id="L137">        String cryptedPassword = sendMailtoCreatedHr(humanResource, language);</span>
+
+        /** create oauth secure user **/
+<span class="fc" id="L140">        createOauthUser(humanResource, cryptedPassword);</span>
+
+<span class="fc" id="L142">        return HumanResourceConverter.newInstance().convert(humanResource);</span>
+    }
+
+    public HumanResourceDto createCompanyAdmin(HumanResourceRequest humanResourceRequest, String language) {
+        /** save consultant **/
+<span class="fc" id="L147">        HumanResource hr = humanResourceRequestConverter.convert(humanResourceRequest);</span>
+<span class="fc" id="L148">        hr.setActive(true);</span>
+<span class="fc" id="L149">        HumanResource humanResource = humanResourceRepository.save(hr);</span>
+        /** Elastic Search **/
+
+        /** send email **/
+<span class="fc" id="L153">        String cryptedPassword = sendMailtoCreatedHr(humanResource, language);</span>
+
+        /** create oauth secure user **/
+<span class="fc" id="L156">        createCompanyAdminUser(humanResource, cryptedPassword);</span>
+
+<span class="fc" id="L158">        return HumanResourceConverter.newInstance().convert(humanResource);</span>
+    }
+
+
+    /**
+     * @param humanResource
+     * @param cryptedPassword
+     */
+    private void createOauthUser(HumanResource humanResource, String cryptedPassword) {
+<span class="fc" id="L167">        List&lt;String&gt; role = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        if (humanResource.getRole().toString().equals(&quot;Manager&quot;)) {</span>
+<span class="nc" id="L169">            role.add(&quot;BUSINESS_MANAGER&quot;);</span>
+        } else {
+<span class="fc" id="L171">            role.add(humanResource.getRole().toString().toUpperCase());</span>
+        }
+<span class="fc" id="L173">        OauthUserDto oAuthUser = OauthUserDto.builder()</span>
+<span class="fc" id="L174">                .id(humanResource.getId().toString())</span>
+<span class="fc" id="L175">                .login(humanResource.getEmail())</span>
+<span class="fc" id="L176">                .password(cryptedPassword)</span>
+<span class="fc" id="L177">                .emailValidation(false)</span>
+<span class="fc" id="L178">                .enabled(true)</span>
+<span class="fc" id="L179">                .roles(role)</span>
+<span class="fc" id="L180">                .build();</span>
+<span class="fc" id="L181">        oAuthRemote.createOAuthUser(oAuthUser);</span>
+<span class="fc" id="L182">    }</span>
+
+    private void createCompanyAdminUser(HumanResource humanResource, String crypted_password) {
+<span class="fc" id="L185">        OauthUserDto oAuthUser = OauthUserDto.builder()</span>
+<span class="fc" id="L186">                .id(humanResource.getId().toString())</span>
+<span class="fc" id="L187">                .login(humanResource.getEmail())</span>
+<span class="fc" id="L188">                .password(crypted_password)</span>
+<span class="fc" id="L189">                .emailValidation(false)</span>
+<span class="fc" id="L190">                .enabled(true)</span>
+<span class="fc" id="L191">                .roles(Arrays.asList(&quot;COMPANY_ADMIN&quot;))</span>
+<span class="fc" id="L192">                .build();</span>
+<span class="fc" id="L193">        oAuthRemote.createOAuthUser(oAuthUser);</span>
+<span class="fc" id="L194">    }</span>
+
+    /**
+     * Send an email to the created Hr
+     *
+     * @param humanResource
+     * @return cryptedPassword
+     */
+    private String sendMailtoCreatedHr(HumanResource humanResource, String language) {
+<span class="fc" id="L203">        String password = this.generateRandomPassword();</span>
+<span class="fc" id="L204">        String cryptedPassword = passwordEncoder.encode(password);</span>
+
+<span class="fc" id="L206">        Map variables = new HashMap();</span>
+
+<span class="fc" id="L208">        VerificationToken verificationToken = new VerificationToken(humanResource);</span>
+<span class="fc" id="L209">        VerificationToken token = verificationTokenRepository.save(verificationToken);</span>
+
+<span class="fc" id="L211">        String url = hrProperties.getFrontUrl() + hrProperties.getRouteMailConfirm() + token.getConfirmationToken();</span>
+<span class="fc" id="L212">        variables.put(&quot;url&quot;, url);</span>
+<span class="fc" id="L213">        variables.put(&quot;password&quot;, password);</span>
+
+<span class="fc" id="L215">        Mail mail = new Mail();</span>
+<span class="fc" id="L216">        mail.setTo(humanResource.getEmail());</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">        if (language.equals(&quot;fr&quot;)) {</span>
+<span class="nc" id="L218">            mail.setTemplate(Type.ENREGISTREMENT_ACTIVATION.name());</span>
+        } else {
+<span class="fc" id="L220">            mail.setTemplate(Type.REGISTRATION_ACTIVATION.name());</span>
+        }
+<span class="fc" id="L222">        mail.setVariables(variables);</span>
+        try {
+<span class="fc" id="L224">            notificationRemote.send(mail);</span>
+<span class="nc" id="L225">        } catch (Exception e) {</span>
+<span class="nc" id="L226">            e.printStackTrace();</span>
+<span class="fc" id="L227">        }</span>
+
+<span class="fc" id="L229">        return cryptedPassword;</span>
+    }
+
+    /**
+     * Index created hr in elastic Search database
+     *
+     * @param humanResource
+     */
+    private void indexElasticSearch(HumanResource humanResource) {
+        try {
+<span class="fc" id="L239">            searchRemote.indexHumanResource(humanResource);</span>
+<span class="nc" id="L240">        } catch (Exception e) {</span>
+<span class="nc" id="L241">            e.printStackTrace();</span>
+<span class="fc" id="L242">        }</span>
+<span class="fc" id="L243">    }</span>
+
+
+    public HumanResourceDto createCandidate(HumanResourceRequest humanResourceRequest) {
+<span class="nc" id="L247">        HumanResource hr = humanResourceRequestConverter.convert(humanResourceRequest);</span>
+<span class="nc" id="L248">        hr.setActive(true);</span>
+<span class="nc" id="L249">        hr.setRole(Role.Candidate);</span>
+<span class="nc" id="L250">        HumanResource humanResource = humanResourceRepository.save(hr);</span>
+
+<span class="nc" id="L252">        return HumanResourceConverter.newInstance().convert(humanResource);</span>
+    }
+
+    public HumanResourceDto update(Long id, HumanResourceRequest humanResourceRequest) {
+
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">        List&lt;Nationality&gt; nationalityList = Objects.nonNull(humanResourceRequest.getNationalities()) ? humanResourceRequest.getNationalities().stream()</span>
+<span class="pc" id="L258">                .map(nationality -&gt; nationalityRepository.findByCountry(nationality)).collect(Collectors.toList()) : Arrays.asList();</span>
+
+<span class="fc" id="L260">        log.info(&quot;update hr service&quot;);</span>
+<span class="fc" id="L261">        HumanResource hr = humanResourceRepository.findById(id).orElse(null);</span>
+<span class="fc" id="L262">        hr.setEmail(humanResourceRequest.getEmail());</span>
+<span class="fc" id="L263">        hr.setFirstname(humanResourceRequest.getFirstname());</span>
+<span class="fc" id="L264">        hr.setLastname(humanResourceRequest.getLastname());</span>
+<span class="fc" id="L265">        hr.setRole(humanResourceRequest.getRole());</span>
+<span class="fc" id="L266">        hr.setAddress(AddressDtoConverter.newInstance().convert(humanResourceRequest.getAddress()));</span>
+<span class="fc" id="L267">        hr.setAvatar(humanResourceRequest.getAvatar());</span>
+<span class="fc" id="L268">        hr.setGender(humanResourceRequest.getGender());</span>
+<span class="fc" id="L269">        hr.setBirthDate(humanResourceRequest.getBirthDate());</span>
+<span class="fc" id="L270">        hr.setPhoneNumber(humanResourceRequest.getPhoneNumber());</span>
+<span class="fc" id="L271">        hr.setNationalities(nationalityList);</span>
+<span class="fc" id="L272">        hr.setActive(true);</span>
+
+        // hr.setCompanyEntity(CompanyEntityDtoConverter.newInstance().convert(humanResourceRequest.getCompanyEntity()));
+        //hr.setSupervisor(HumanResourceDtoConverter.newInstance().convert(humanResourceRequest.getSupervisor()));
+<span class="fc" id="L276">        HumanResource humanResource = humanResourceRepository.save(hr);</span>
+
+<span class="fc" id="L278">        return HumanResourceConverter.newInstance().convert(hr);</span>
+
+    }
+
+    public void assignSupervisorToHumanResource(Long id, Long supervisorId) {
+<span class="nc" id="L283">        Optional&lt;HumanResource&gt; hr = humanResourceRepository.findById(id);</span>
+<span class="nc" id="L284">        Optional&lt;HumanResource&gt; supervisor = humanResourceRepository.findById(supervisorId);</span>
+
+<span class="nc" id="L286">        hr.get().setSupervisor(supervisor.get());</span>
+<span class="nc" id="L287">        humanResourceRepository.save(hr.get());</span>
+
+<span class="nc" id="L289">    }</span>
+
+    public void delete(Long id) {
+
+<span class="nc" id="L293">        Optional&lt;HumanResource&gt; hr = humanResourceRepository.findById(id);</span>
+<span class="nc" id="L294">        hr.get().setActive(false);</span>
+<span class="nc" id="L295">        humanResourceRepository.save(hr.get());</span>
+<span class="nc" id="L296">        oAuthRemote.deleteOAuthUser(id);</span>
+<span class="nc" id="L297">    }</span>
+
+
+    public List&lt;HumanResourceDto&gt; filterHumanResourcesByKeyword(Long id, String query) {
+<span class="fc" id="L301">        List&lt;HumanResource&gt; hr = humanResourceRepository.findByCriteria(id, query);</span>
+<span class="fc" id="L302">        return hr.stream().map(humanResource -&gt; HumanResourceConverter.newInstance().convert(humanResource)).collect(Collectors.toList());</span>
+    }
+
+    public List&lt;HumanResourceDto&gt; getHumanResourcesBySupervisorId(Long id) {
+<span class="fc" id="L306">        HumanResource supervisor = humanResourceRepository.findById(id).orElse(null);</span>
+<span class="fc" id="L307">        List&lt;HumanResource&gt; hrs = humanResourceRepository.findBySupervisor(supervisor);</span>
+<span class="fc" id="L308">        return hrs.stream().map(humanResource -&gt; HumanResourceConverter.newInstance().convert(humanResource)).collect(Collectors.toList());</span>
+    }
+
+    public Map&lt;String, List&gt; getAllHumanResourcesDataBySupervisorId(Long id) {
+<span class="nc" id="L312">        List&lt;HumanResource&gt; hrs = humanResourceRepository.findBySupervisorId(id);</span>
+<span class="nc" id="L313">        List&lt;HumanResource&gt; consultants = hrs.stream().filter(hr -&gt; Role.Consultant.equals(hr.getRole())).collect(Collectors.toList());</span>
+<span class="nc" id="L314">        List&lt;HumanResource&gt; managers = hrs.stream().filter(hr -&gt; Role.Manager.equals(hr.getRole())).collect(Collectors.toList());</span>
+<span class="nc" id="L315">        List&lt;HumanResource&gt; candidates = hrs.stream().filter(hr -&gt; Role.Candidate.equals(hr.getRole())).collect(Collectors.toList());</span>
+<span class="nc" id="L316">        List&lt;HumanResource&gt; recruiters = hrs.stream().filter(hr -&gt; Role.Recruiter.equals(hr.getRole())).collect(Collectors.toList());</span>
+<span class="nc" id="L317">        Map&lt;String, List&gt; allHrs = new HashMap&lt;String, List&gt;();</span>
+<span class="nc" id="L318">        List&lt;Map&lt;String, Object&gt;&gt; consultantsResult = new ArrayList&lt;&gt;();</span>
+
+<span class="nc" id="L320">        consultantsResult = consultants.stream().map(consultant -&gt;</span>
+<span class="nc" id="L321">                getConsultantsData(HumanResourceConverter.newInstance().convert(consultant))).collect(Collectors.toList());</span>
+
+<span class="nc" id="L323">        List&lt;Map&lt;String, Object&gt;&gt; managersResult = new ArrayList&lt;&gt;();</span>
+
+<span class="nc" id="L325">        managersResult = managers.stream().map(manager -&gt;</span>
+<span class="nc" id="L326">                getConsultantsData(HumanResourceConverter.newInstance().convert(manager))).collect(Collectors.toList());</span>
+<span class="nc" id="L327">        List&lt;Map&lt;String, Object&gt;&gt; recruitersResult = new ArrayList&lt;&gt;();</span>
+
+<span class="nc" id="L329">        recruitersResult = recruiters.stream().map(recruiter -&gt;</span>
+<span class="nc" id="L330">                getConsultantsData(HumanResourceConverter.newInstance().convert(recruiter))).collect(Collectors.toList());</span>
+<span class="nc" id="L331">        allHrs.put(&quot;consultants&quot;, consultantsResult);</span>
+<span class="nc" id="L332">        allHrs.put(&quot;managers&quot;, managersResult);</span>
+<span class="nc" id="L333">        allHrs.put(&quot;candidates&quot;, candidates);</span>
+<span class="nc" id="L334">        allHrs.put(&quot;recruiters&quot;, recruitersResult);</span>
+<span class="nc" id="L335">        return allHrs;</span>
+    }
+
+
+    public List&lt;HumanResourceDto&gt; getAllRecruitersAndManagersDataByCompanyEntityId(Company id) {
+<span class="nc" id="L340">        List&lt;HumanResource&gt; humanResourceDtos = humanResourceRepository.findByCompanyEntityId(id);</span>
+<span class="nc" id="L341">        return humanResourceDtos.stream().map(humanResource -&gt; HumanResourceConverter.newInstance().convert(humanResource)).collect(Collectors.toList());</span>
+
+    }
+
+
+    private Map&lt;String, Object&gt; getConsultantsData(HumanResourceDto consultant) {
+<span class="nc" id="L347">        Map&lt;String, Object&gt; consultantsData = new HashMap&lt;String, Object&gt;();</span>
+<span class="nc" id="L348">        Map&lt;String, Object&gt; careerData = new HashMap&lt;String, Object&gt;();</span>
+<span class="nc" id="L349">        List&lt;BiAnnualAssessmentDto&gt; biAnnualAssessmentsList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L350">        List&lt;AssessmentCampaignDto&gt; assessmentCampaignsList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L351">        CareerDto career = CareerDto.builder().build();</span>
+<span class="nc" id="L352">        Map&lt;String, Object&gt; missionsStats = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L353">        TechnicalDocumentDto td = null;</span>
+<span class="nc" id="L354">        consultantsData.put(&quot;hrData&quot;, consultant);</span>
+        //consultantsData.put(&quot;supervisorData&quot;,consultant.getSupervisor());
+        try {
+<span class="nc" id="L357">            td = tdMsClient.getByHrId(consultant.getId()).getBody();</span>
+<span class="nc" id="L358">        } catch (Exception e) {</span>
+<span class="nc" id="L359">            e.printStackTrace();</span>
+        } finally {
+<span class="nc" id="L361">            consultantsData.put(&quot;tdData&quot;, td);</span>
+        }
+        try {
+<span class="nc" id="L364">            missionsStats = missionMsClient.getMissionsStatsByConsultant(consultant.getId()).getBody();</span>
+<span class="nc" id="L365">        } catch (Exception e) {</span>
+<span class="nc" id="L366">            e.printStackTrace();</span>
+        } finally {
+<span class="nc" id="L368">            consultantsData.put(&quot;missionData&quot;, missionsStats);</span>
+        }
+        try {
+<span class="nc" id="L371">            career = careerMsClient.getCareerByResourceId(consultant.getId()).getBody();</span>
+<span class="nc" id="L372">            assessmentCampaignsList = careerMsClient.getAllAssessmentCampaigns(consultant.getCompanyEntity().getCompany().getId()).getBody();</span>
+<span class="nc" id="L373">            biAnnualAssessmentsList = careerMsClient.findBiannualAssessmentByhrId(consultant.getId()).getBody();</span>
+<span class="nc" id="L374">        } catch (Exception e) {</span>
+<span class="nc" id="L375">            e.printStackTrace();</span>
+        } finally {
+<span class="nc" id="L377">            careerData.put(&quot;career&quot;, career);</span>
+<span class="nc" id="L378">            careerData.put(&quot;assessments&quot;, biAnnualAssessmentsList);</span>
+<span class="nc" id="L379">            careerData.put(&quot;campaigns&quot;, assessmentCampaignsList);</span>
+<span class="nc" id="L380">            consultantsData.put(&quot;careerData&quot;, careerData);</span>
+        }
+<span class="nc" id="L382">        return consultantsData;</span>
+    }
+
+
+    private boolean isValidHr(Long id, HumanResource supervisor, HumanResource hr) {
+        //boolean valid1 = Role.Consultant.equals(hr.getRole());
+<span class="nc" id="L388">        boolean valid2 = id.equals(Optional.ofNullable(hr.getSupervisor()).map(HumanResource::getId).orElse(null));</span>
+<span class="nc" id="L389">        CompanyEntity companyEntity = supervisor.getCompanyEntity();</span>
+<span class="nc bnc" id="L390" title="All 4 branches missed.">        boolean valid3 = Visibility.Entity.equals(hr.getVisibility()) &amp;&amp; Optional.ofNullable(companyEntity).map(companyEntity1 -&gt; companyEntity1.getId().equals(hr.getCompanyEntity().getId())).orElse(false);</span>
+<span class="nc bnc" id="L391" title="All 4 branches missed.">        boolean valid4 = Visibility.Group.equals(hr.getVisibility()) &amp;&amp; Optional.ofNullable(companyEntity).filter(companyEntity1 -&gt; Objects.nonNull(companyEntity1.getCompany())).map(company -&gt; company.getCompany().getId().equals(hr.getCompanyEntity().getCompany().getId())).orElse(false);</span>
+<span class="nc bnc" id="L392" title="All 6 branches missed.">        return valid2 || valid3 || valid4;</span>
+        //return valid1 &amp;&amp; (valid2 || valid3 || valid4);
+    }
+
+    public HumanResourceDto setLoggedInTrue(Long id) {
+<span class="nc" id="L397">        Optional&lt;HumanResource&gt; hr = humanResourceRepository.findById(id);</span>
+<span class="nc" id="L398">        hr.get().setAlreadyLoggedIn(true);</span>
+<span class="nc" id="L399">        HumanResource humanResource = humanResourceRepository.save(hr.get());</span>
+<span class="nc" id="L400">        return HumanResourceConverter.newInstance().convert(humanResource);</span>
+
+    }
+
+    public List&lt;HumanResourceDto&gt; getAllByCompanyId(Long companyId) {
+<span class="nc" id="L405">        List&lt;HumanResource&gt; humanResourceDtos = humanResourceRepository.findByCompanyId(companyId);</span>
+<span class="nc" id="L406">        return humanResourceDtos.stream().map(humanResource -&gt; HumanResourceConverter.newInstance().convert(humanResource)).collect(Collectors.toList());</span>
+    }
+
+    public List&lt;HumanResourceLightDto&gt; getAllByCompanyLabel(String label) {
+<span class="nc" id="L410">        List&lt;HumanResource&gt; humanResourceDtos = humanResourceRepository.findByCompanyLabel(label);</span>
+<span class="nc" id="L411">        return humanResourceDtos.stream().map(humanResource -&gt; HumanResourceLightConverter.newInstance().convert(humanResource)).collect(Collectors.toList());</span>
+    }
+
+    public Page&lt;HumanResourceDto&gt; getAllHrsByRole(Pageable pageable, Role role) {
+<span class="nc" id="L415">        Page&lt;HumanResource&gt; resources = humanResourceRepository.findByRole(role, pageable);</span>
+<span class="nc" id="L416">        return resources.map(HumanResourceConverter.newInstance()::convert);</span>
+    }
+
+    /**
+     * get human resource by career id
+     *
+     * @param careerId
+     * @return
+     */
+    public Optional&lt;HumanResourceLightDto&gt; getHumanResourceByCareerId(Long careerId) {
+<span class="nc" id="L426">        CareerDto career = careerMsClient.getCareer(careerId).getBody();</span>
+<span class="nc" id="L427">        return getLightHrById(career.getHr());</span>
+    }
+
+
+    public String generateRandomPassword() {
+<span class="fc" id="L432">        int leftLimit = 48; // numeral '0'</span>
+<span class="fc" id="L433">        int rightLimit = 122; // letter 'z'</span>
+<span class="fc" id="L434">        int targetStringLength = 10;</span>
+<span class="fc" id="L435">        Random random = new Random();</span>
+
+<span class="fc" id="L437">        String generatedString = random.ints(leftLimit, rightLimit + 1)</span>
+<span class="fc bfc" id="L438" title="All 8 branches covered.">                .filter(i -&gt; (i &lt;= 57 || i &gt;= 65) &amp;&amp; (i &lt;= 90 || i &gt;= 97))</span>
+<span class="fc" id="L439">                .limit(targetStringLength)</span>
+<span class="fc" id="L440">                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)</span>
+<span class="fc" id="L441">                .toString();</span>
+<span class="fc" id="L442">        return generatedString;</span>
+    }
+
+    public HumanResourceDto updateAvatar(Long id, String avatarUrl) {
+<span class="nc" id="L446">        HumanResource hr = humanResourceRepository.findById(id).orElse(null);</span>
+
+<span class="nc" id="L448">        hr.setAvatar(avatarUrl);</span>
+<span class="nc" id="L449">        HumanResource savedHumanResource = humanResourceRepository.save(hr);</span>
+<span class="nc bnc" id="L450" title="All 2 branches missed.">        if (savedHumanResource.getRole().toString().equals(&quot;Consultant&quot;)) {</span>
+<span class="nc" id="L451">            indexElasticSearch(savedHumanResource);</span>
+        }
+<span class="nc" id="L453">        return HumanResourceConverter.newInstance().convert(savedHumanResource);</span>
+
+
+    }
+
+    public Map&lt;String, Object&gt; getAllHumanResourceDataById(Long id) {
+<span class="nc" id="L459">        HumanResource humanResource = humanResourceRepository.findById(id).orElse(null);</span>
+
+<span class="nc" id="L461">        Map&lt;String, Object&gt; consultantsData = getConsultantsData(HumanResourceConverter.newInstance().convert(humanResource));</span>
+<span class="nc" id="L462">        return consultantsData;</span>
+    }
+
+
+    public List&lt;HumanResourceDto&gt; getHierarchy(long humanResource) {
+<span class="nc" id="L467">        List&lt;HumanResource&gt; humanResource1 = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L468">        Map&lt;Long, List&gt; allHrs = new HashMap&lt;Long, List&gt;();</span>
+<span class="nc" id="L469">        List&lt;HumanResource&gt; parcours = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L470">        List&lt;HumanResource&gt; stockage = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L471">        Boolean test = true;</span>
+<span class="nc" id="L472">        List&lt;HumanResource&gt; humanResources = humanResourceRepository.findBySupervisorId(humanResource);</span>
+<span class="nc" id="L473">        parcours = humanResources;</span>
+<span class="nc" id="L474">        humanResource1 = humanResources;</span>
+
+<span class="nc bnc" id="L476" title="All 2 branches missed.">        while (test == true) {</span>
+<span class="nc bnc" id="L477" title="All 2 branches missed.">            for (int i = 0; i &lt; parcours.size(); i++) {</span>
+<span class="nc" id="L478">                humanResource1.addAll(humanResourceRepository.findBySupervisorId(parcours.get(i).getId()));</span>
+
+<span class="nc bnc" id="L480" title="All 2 branches missed.">                if (humanResourceRepository.findBySupervisorId(parcours.get(i).getId()).size() &gt; 0) {</span>
+<span class="nc" id="L481">                    stockage.addAll(humanResourceRepository.findBySupervisorId(parcours.get(i).getId()));</span>
+                }
+            }
+<span class="nc bnc" id="L484" title="All 2 branches missed.">            if (stockage.size() &gt; 0) {</span>
+<span class="nc" id="L485">                parcours = stockage;</span>
+<span class="nc" id="L486">                stockage.clear();</span>
+            } else {
+<span class="nc" id="L488">                test = false;</span>
+            }
+        }
+<span class="nc" id="L491">        return humanResource1.stream().map(hr -&gt; HumanResourceConverter.newInstance().convert(hr)).collect(Collectors.toList());</span>
+    }
+
+    public List&lt;HumanResourceDto&gt; getAllManagersByCompanyId(Long companyId) {
+<span class="nc" id="L495">        List&lt;HumanResource&gt; humanResourceDtos = humanResourceRepository.getManagerByCompany(companyId);</span>
+<span class="nc" id="L496">        return humanResourceDtos.stream().map(humanResource -&gt; HumanResourceConverter.newInstance().convert(humanResource)).collect(Collectors.toList());</span>
+    }
+
+    public List&lt;HumanResourceDto&gt; getAllConsultantByCompanyId(Long companyId) {
+<span class="nc" id="L500">        List&lt;HumanResource&gt; humanResourceDtos = humanResourceRepository.getConsultantByCompany(companyId);</span>
+<span class="nc" id="L501">        return humanResourceDtos.stream().map(humanResource -&gt; HumanResourceConverter.newInstance().convert(humanResource)).collect(Collectors.toList());</span>
+    }
+
+    public static String GetSASToken(String resourceUri, String keyName, String key) {
+<span class="nc" id="L505">        long epoch = System.currentTimeMillis() / 1000L;</span>
+<span class="nc" id="L506">        int week = 60 * 60 * 24 * 7;</span>
+<span class="nc" id="L507">        String expiry = Long.toString(epoch + week);</span>
+
+<span class="nc" id="L509">        String sasToken = null;</span>
+        try {
+<span class="nc" id="L511">            String stringToSign = URLEncoder.encode(resourceUri, StandardCharsets.UTF_8) + &quot;\n&quot; + expiry;</span>
+<span class="nc" id="L512">            String signature = getHMAC256(key, stringToSign);</span>
+<span class="nc" id="L513">            sasToken = &quot;SharedAccessSignature sr=&quot; + URLEncoder.encode(resourceUri, StandardCharsets.UTF_8) + &quot;&amp;sig=&quot; +</span>
+<span class="nc" id="L514">                    URLEncoder.encode(signature, StandardCharsets.UTF_8) + &quot;&amp;se=&quot; + expiry + &quot;&amp;skn=&quot; + keyName;</span>
+<span class="nc" id="L515">        } catch (Exception e) {</span>
+
+<span class="nc" id="L517">            e.printStackTrace();</span>
+<span class="nc" id="L518">        }</span>
+
+<span class="nc" id="L520">        return sasToken;</span>
+    }
+
+
+    public static String getHMAC256(String key, String input) {
+<span class="nc" id="L525">        Mac sha256_HMAC = null;</span>
+<span class="nc" id="L526">        String hash = null;</span>
+        try {
+<span class="nc" id="L528">            sha256_HMAC = Mac.getInstance(&quot;HmacSHA256&quot;);</span>
+<span class="nc" id="L529">            SecretKeySpec secret_key = new SecretKeySpec(key.getBytes(), &quot;HmacSHA256&quot;);</span>
+<span class="nc" id="L530">            sha256_HMAC.init(secret_key);</span>
+<span class="nc" id="L531">            Base64.Encoder encoder = Base64.getEncoder();</span>
+
+<span class="nc" id="L533">            hash = new String(encoder.encode(sha256_HMAC.doFinal(input.getBytes(&quot;UTF-8&quot;))));</span>
+
+<span class="nc" id="L535">        } catch (InvalidKeyException e) {</span>
+<span class="nc" id="L536">            e.printStackTrace();</span>
+<span class="nc" id="L537">        } catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L538">            e.printStackTrace();</span>
+<span class="nc" id="L539">        } catch (IllegalStateException e) {</span>
+<span class="nc" id="L540">            e.printStackTrace();</span>
+<span class="nc" id="L541">        } catch (UnsupportedEncodingException e) {</span>
+<span class="nc" id="L542">            e.printStackTrace();</span>
+<span class="nc" id="L543">        } catch (Exception e) {</span>
+<span class="nc" id="L544">            e.printStackTrace();</span>
+<span class="nc" id="L545">        }</span>
+
+<span class="nc" id="L547">        return hash;</span>
+    }
+
+    public Map&lt;String, String&gt; callblobRestAPIWithSas() {
+
+        //SimpleDateFormat fmt = new SimpleDateFormat(&quot;yyyy-MM-dd'T'HH:mm:ssZ&quot;);
+        //fmt.setTimeZone(TimeZone.getTimeZone(&quot;UTC&quot;));
+
+<span class="nc" id="L555">        ZonedDateTime startDate = ZonedDateTime.now().minusDays(1);</span>
+<span class="nc" id="L556">        ZonedDateTime expiryDate = ZonedDateTime.now().plusDays(1);</span>
+
+<span class="nc" id="L558">        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd'T'HH:mm:ssX&quot;);</span>
+<span class="nc" id="L559">        String start = formatter.format(startDate.withZoneSameLocal(ZoneId.of(&quot;UTC&quot;)));</span>
+<span class="nc" id="L560">        String expiry = formatter.format(expiryDate.withZoneSameLocal(ZoneId.of(&quot;UTC&quot;)));</span>
+
+
+//        Calendar cal = Calendar.getInstance();
+//        cal.setTime(new Date());
+//        cal.add(Calendar.DATE, -2);
+//        String start = fmt.format(cal);
+//        cal.add(Calendar.DATE, 4);
+//        String expiry = fmt.format(cal.getTime());
+<span class="nc" id="L569">        String storageAccountName = &quot;captivaostalenteo&quot;;</span>
+<span class="nc" id="L570">        String storageAccountKey = &quot;edkc4XZAWi6bOTnCGfpovoijdqKMG6gSCSYP7IuXRCN7wCryP3LU+EpjhdZ72Xs9hEZDL/jD78EbP4SDN3LeGg==&quot;;</span>
+<span class="nc" id="L571">        String apiVersion = &quot;2019-12-12&quot;;</span>
+<span class="nc" id="L572">        String resource = &quot;sco&quot;;</span>
+<span class="nc" id="L573">        String permissions = &quot;rwdlacx&quot;;</span>
+<span class="nc" id="L574">        String service = &quot;b&quot;;</span>
+
+<span class="nc" id="L576">        String stringToSign = storageAccountName + &quot;\n&quot; +</span>
+                permissions + &quot;\n&quot; +
+                service + &quot;\n&quot; +
+                resource + &quot;\n&quot; +
+                start + &quot;\n&quot; +
+                expiry + &quot;\n&quot; +
+                &quot;\n&quot; +
+                &quot;https\n&quot; +
+                apiVersion + &quot;\n&quot;;
+
+<span class="nc" id="L586">        String signature = getHMAC256(storageAccountKey, stringToSign);</span>
+
+        try {
+
+<span class="nc" id="L590">            String sasToken = &quot;comp=list&amp;restype=container&quot; +</span>
+                    &quot;&amp;sv=&quot; + apiVersion +
+                    &quot;&amp;ss=&quot; + service +
+                    &quot;&amp;srt=&quot; + resource +
+                    &quot;&amp;sp=&quot; + permissions +
+                    &quot;&amp;se=&quot; + expiry + //URLEncoder.encode(expiry, &quot;UTF-8&quot;) +
+                    &quot;&amp;st=&quot; + start + //URLEncoder.encode(start, &quot;UTF-8&quot;) +
+                    &quot;&amp;spr=https&quot; +
+<span class="nc" id="L598">                    &quot;&amp;sig=&quot; + URLEncoder.encode(signature, &quot;UTF-8&quot;);</span>
+
+<span class="nc" id="L600">            Map&lt;String, String&gt; result = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L601">            result.put(&quot;token&quot;, sasToken);</span>
+<span class="nc" id="L602">            return result;</span>
+
+<span class="nc" id="L604">        } catch (UnsupportedEncodingException e) {</span>
+<span class="nc" id="L605">            e.printStackTrace();</span>
+<span class="nc" id="L606">            return null;</span>
+        }
+    }
+
+    public void uploadAvatar(Long humanResource, MultipartFile file) throws IOException {
+<span class="nc" id="L611">        Optional&lt;HumanResource&gt; optHr = humanResourceRepository.findById(humanResource);</span>
+<span class="nc" id="L612">        HumanResource hr = optHr.get();</span>
+<span class="nc" id="L613">        ZonedDateTime now = ZonedDateTime.now();</span>
+<span class="nc" id="L614">        String filename = &quot;avatar-&quot; + hr.getId() + &quot;-&quot; + now.getNano() + &quot;.&quot; + FilenameUtils.getExtension(file.getOriginalFilename());</span>
+<span class="nc" id="L615">        String blobPath = &quot;avatars&quot;;</span>
+<span class="nc" id="L616">        hr.setAvatar(hrProperties.getEndpoint() + &quot;/&quot; + blobPath+ &quot;/&quot; + filename);</span>
+<span class="nc" id="L617">        azureBlobStorageUtils.createOrReplaceFile(blobPath, filename, file.getInputStream(), file.getSize());</span>
+<span class="nc" id="L618">        humanResourceRepository.save(hr);</span>
+<span class="nc" id="L619">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

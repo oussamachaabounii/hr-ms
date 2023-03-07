@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CompanyEntityDtoConverter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">hr-ms</a> &gt; <a href="index.source.html" class="el_package">com.talenteo.hr.converter</a> &gt; <span class="el_source">CompanyEntityDtoConverter.java</span></div><h1>CompanyEntityDtoConverter.java</h1><pre class="source lang-java linenums">package com.talenteo.hr.converter;
+
+import com.talenteo.hr.dto.CompanyEntityDto;
+import com.talenteo.hr.model.entity.CompanyEntity;
+import lombok.Data;
+import org.springframework.core.convert.converter.Converter;
+
+import java.util.Objects;
+
+<span class="pc bnc" id="L10" title="All 6 branches missed.">@Data(staticConstructor = &quot;newInstance&quot;)</span>
+public class CompanyEntityDtoConverter implements Converter&lt;CompanyEntityDto, CompanyEntity&gt; {
+
+    @Override
+    public CompanyEntity convert(CompanyEntityDto companyEntityDto) {
+<span class="pc bpc" id="L15" title="1 of 2 branches missed.">        if (Objects.isNull(companyEntityDto)) {</span>
+<span class="nc" id="L16">            return null;</span>
+        }
+<span class="fc" id="L18">        return CompanyEntity.builder()</span>
+<span class="fc" id="L19">                .id(companyEntityDto.getId())</span>
+<span class="fc" id="L20">                .label(companyEntityDto.getLabel())</span>
+<span class="fc" id="L21">                .email(companyEntityDto.getEmail())</span>
+<span class="fc" id="L22">                .phoneNumber(companyEntityDto.getPhoneNumber())</span>
+<span class="fc" id="L23">                .company(CompanyDtoConverter.newInstance().convert(companyEntityDto.getCompany()))</span>
+<span class="fc" id="L24">                .address(AddressDtoConverter.newInstance().convert(companyEntityDto.getAddress()))</span>
+<span class="fc" id="L25">                .isActive(companyEntityDto.getIsActive())</span>
+<span class="fc" id="L26">                .build();</span>
+    }
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

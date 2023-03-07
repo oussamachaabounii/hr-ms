@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HRResource.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">hr-ms</a> &gt; <a href="index.source.html" class="el_package">com.talenteo.hr.api</a> &gt; <span class="el_source">HRResource.java</span></div><h1>HRResource.java</h1><pre class="source lang-java linenums">package com.talenteo.hr.api;
+
+import com.talenteo.common.error.TalenteoCommonMessages;
+import com.talenteo.hr.dto.*;
+import com.talenteo.hr.model.entity.Company;
+import com.talenteo.hr.service.HumanResourceService;
+import com.talenteo.hr.service.OAuthRemote;
+import com.talenteo.hr.service.ValidationService;
+import feign.Headers;
+import io.micrometer.core.annotation.Timed;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.PagedResources;
+import org.springframework.hateoas.Resource;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.MimeTypeUtils;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import javax.validation.Valid;
+import javax.validation.constraints.Email;
+import java.io.IOException;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
+
+<span class="fc" id="L41">@Slf4j</span>
+@RestController
+@RequestMapping(&quot;/api&quot;)
+@Validated
+<span class="fc" id="L45">@AllArgsConstructor</span>
+@Timed
+public class HRResource {
+
+    private final HumanResourceService humanResourceService;
+    private final ValidationService validationService;
+    private final OAuthRemote oAuthRemote;
+
+
+    /************************************* Get Apis *********************************************************/
+
+
+    @ApiOperation(&quot;Get human resource by id&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_HR')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/{id}&quot;)
+    ResponseEntity&lt;HumanResourceDto&gt; getById(@PathVariable Long id) {
+<span class="fc" id="L62">        log.info(&quot;get human resource by id = {}&quot;, id);</span>
+<span class="fc" id="L63">        Optional&lt;HumanResourceDto&gt; humanResourceDto = humanResourceService.getHrById(id);</span>
+<span class="fc" id="L64">        return humanResourceDto.map(hr -&gt; ResponseEntity.ok().body(hr)).orElseGet(() -&gt; ResponseEntity.notFound().build());</span>
+    }
+
+    @ApiOperation(&quot;Get all human resources by role&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_HR')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/by-role&quot;)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = &quot;page&quot;, dataType = &quot;int&quot;, paramType = &quot;query&quot;,
+                    value = &quot;Results page you want to retrieve (0..N)&quot;, required = true),
+            @ApiImplicitParam(name = &quot;size&quot;, dataType = &quot;int&quot;, paramType = &quot;query&quot;,
+                    value = &quot;Number of records per page.&quot;, required = true),
+            @ApiImplicitParam(name = &quot;sort&quot;, allowMultiple = true, dataType = &quot;string&quot;, paramType = &quot;query&quot;,
+                    value = &quot;Sorting criteria in the format: property(,asc|desc). &quot; +
+                            &quot;Default sort order is ascending. &quot; +
+                            &quot;Multiple sort criteria are supported.&quot;)
+    })
+    public ResponseEntity&lt;PagedResources&lt;Resource&lt;HumanResourceDto&gt;&gt;&gt; getAllResourcesByRole(@RequestParam(required = false) Role role,
+                                                                                            Pageable pageable,
+                                                                                            PagedResourcesAssembler&lt;HumanResourceDto&gt; assembler) {
+<span class="nc" id="L84">        log.info(&quot;Get all human resources by role = {}&quot;, role);</span>
+<span class="nc" id="L85">        Page&lt;HumanResourceDto&gt; resources = humanResourceService.getAllHrsByRole(pageable, role);</span>
+<span class="nc" id="L86">        PagedResources&lt;Resource&lt;HumanResourceDto&gt;&gt; pagedResources = assembler.toResource(resources);</span>
+<span class="nc" id="L87">        return ResponseEntity.ok(pagedResources);</span>
+    }
+
+
+    @ApiOperation(&quot;Get company admin by company&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_HR')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/company-admin/by-company&quot;)
+    ResponseEntity&lt;HumanResourceDto&gt; getCompanyAdminByCompany(@RequestParam(&quot;company_id&quot;) Long companyId) {
+<span class="nc" id="L96">        log.info(&quot;Get company admin by company = {}&quot;, companyId);</span>
+<span class="nc" id="L97">        Optional&lt;HumanResourceDto&gt; companyAdminByCompany = humanResourceService.getCompanyAdminByCompany(companyId);</span>
+<span class="nc" id="L98">        return companyAdminByCompany.map(hr -&gt; ResponseEntity.ok().body(hr)).orElseGet(() -&gt; ResponseEntity.notFound().build());</span>
+
+    }
+
+    @ApiOperation(&quot;confirm registration&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/confirm-registration&quot;)
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_REGISTER')&quot;)
+    public ResponseEntity&lt;HumanResourceDto&gt; confirmRegistration(@RequestParam(&quot;token&quot;) String confirmationToken) {
+<span class="nc" id="L106">        log.info(&quot;confirm registration with token = {}&quot;, confirmationToken);</span>
+<span class="nc" id="L107">        HumanResourceDto humanResourceDto = humanResourceService.confirmRegistration(confirmationToken);</span>
+<span class="nc" id="L108">        return ResponseEntity.ok().body(humanResourceDto);</span>
+    }
+
+    @ApiOperation(&quot;Get light human resource by id&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_HR')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/light/{id}&quot;)
+    ResponseEntity&lt;HumanResourceLightDto&gt; getLightHRById(@PathVariable Long id) {
+<span class="nc" id="L116">        log.info(&quot;get light human resource by id = {}&quot;, id);</span>
+<span class="nc" id="L117">        Optional&lt;HumanResourceLightDto&gt; humanResourceDto = humanResourceService.getLightHrById(id);</span>
+<span class="nc" id="L118">        return humanResourceDto.map(hr -&gt; ResponseEntity.ok().body(hr)).orElseGet(() -&gt; ResponseEntity.notFound().build());</span>
+
+    }
+
+    @ApiOperation(&quot;Get human resource by email&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_HR')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/search-by-email&quot;)
+    ResponseEntity&lt;HumanResourceDto&gt; getByEmail(@RequestParam @Email(message = TalenteoCommonMessages.INVALID_EMAIL) String email) {
+<span class="fc" id="L127">        log.info(&quot;get human resource by email = {}&quot;, email);</span>
+<span class="fc" id="L128">        Optional&lt;HumanResourceDto&gt; humanResourceDto = humanResourceService.getByEmail(email);</span>
+<span class="fc" id="L129">        return humanResourceDto.map(hr -&gt; ResponseEntity.ok().body(hr)).orElseGet(() -&gt; ResponseEntity.notFound().build());</span>
+
+    }
+
+    @ApiOperation(&quot;Check if email exists&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyRole('ROLE_PLATFORM_UI')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/email-exists&quot;)
+    ResponseEntity&lt;Boolean&gt; emailExists(@RequestParam @Email(message = TalenteoCommonMessages.INVALID_EMAIL) String email) {
+<span class="nc" id="L138">        log.info(&quot;check if email = {} exists&quot;, email);</span>
+<span class="nc" id="L139">        HumanResourceDto humanResourceDto = humanResourceService.getByEmail(email).orElse(null);</span>
+<span class="nc" id="L140">        Boolean exists = Objects.nonNull(humanResourceDto);</span>
+<span class="nc" id="L141">        return ResponseEntity.ok().body(exists);</span>
+
+    }
+
+    @ApiOperation(&quot;Check all recruiters and managers by company entity id &quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_HR')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/company-admin&quot;)
+    ResponseEntity&lt;List&lt;HumanResourceDto&gt;&gt; getAllHumanResourcesByCompanyEntityId(@RequestParam(name = &quot;company_entity_id&quot;) Company id) {
+<span class="nc" id="L150">        log.info(&quot;company entity id&quot;, id);</span>
+<span class="nc" id="L151">        List&lt;HumanResourceDto&gt; humanResourceDtos = humanResourceService.getAllRecruitersAndManagersDataByCompanyEntityId(id);</span>
+<span class="nc" id="L152">        return ResponseEntity.ok().body(humanResourceDtos);</span>
+
+    }
+
+    @ApiOperation(&quot;Get all human resources by company id&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_HR')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/by-company&quot;)
+    ResponseEntity&lt;List&lt;HumanResourceDto&gt;&gt; getAllHumanResourcesByCompanyId(@RequestParam(name = &quot;company_id&quot;) Long companyId) {
+<span class="nc" id="L161">        log.info(&quot;get all human resources by company = {}&quot;, companyId);</span>
+<span class="nc" id="L162">        List&lt;HumanResourceDto&gt; humanResourceDtos = humanResourceService.getAllByCompanyId(companyId);</span>
+<span class="nc" id="L163">        return ResponseEntity.ok().body(humanResourceDtos);</span>
+    }
+
+
+    @ApiOperation(&quot;get Human Resources by Supervisor Id&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_HR')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/by-supervisor-id&quot;)
+    ResponseEntity&lt;List&lt;HumanResourceDto&gt;&gt; getHumanResourceBySupervisor(@RequestParam(name = &quot;supervisor_id&quot;) Long id) {
+<span class="fc" id="L172">        log.info(&quot;get Human Resources by Supervisor Id = {}&quot;, id);</span>
+
+<span class="fc" id="L174">        List&lt;HumanResourceDto&gt; humanResourceDtos = humanResourceService.getHumanResourcesBySupervisorId(id);</span>
+<span class="fc" id="L175">        return ResponseEntity.ok().body(humanResourceDtos);</span>
+    }
+
+    @ApiOperation(&quot;get all Human Resources Data by Id&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_HR')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/{id}/details&quot;)
+    ResponseEntity&lt;Map&lt;String, Object&gt;&gt; getAllHumanResourceDataById(@PathVariable() Long id) {
+<span class="nc" id="L183">        log.info(&quot;get all Human Resources data by Id= {}&quot;, id);</span>
+<span class="nc" id="L184">        Map&lt;String, Object&gt; humanResourceDto = humanResourceService.getAllHumanResourceDataById(id);</span>
+<span class="nc" id="L185">        return ResponseEntity.ok().body(humanResourceDto);</span>
+    }
+
+    @ApiOperation(&quot;get all Human Resources Data by Supervisor Id&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_HR')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/by-supervisor&quot;)
+    ResponseEntity&lt;Map&lt;String, List&gt;&gt; getAllHumanResourcesDataBySupervisorId(@RequestParam(name = &quot;supervisor_id&quot;) Long id) {
+<span class="nc" id="L193">        log.info(&quot;get all Human Resources data by Supervisor Id= {}&quot;, id);</span>
+<span class="nc" id="L194">        Map&lt;String, List&gt; humanResourceDtos = humanResourceService.getAllHumanResourcesDataBySupervisorId(id);</span>
+<span class="nc" id="L195">        return ResponseEntity.ok().body(humanResourceDtos);</span>
+    }
+
+    @ApiOperation(&quot;filter Human Resource by keyword&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_HR')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/by&quot;)
+    ResponseEntity&lt;List&lt;HumanResourceDto&gt;&gt; filterHumanResourcesByKeyword(@RequestParam(name = &quot;supervisor_id&quot;) Long id, @RequestParam String query) {
+<span class="fc" id="L203">        log.info(&quot;filter Human Resource by keyword = {}&quot;, query);</span>
+<span class="fc" id="L204">        List&lt;HumanResourceDto&gt; humanResourceDtos = humanResourceService.filterHumanResourcesByKeyword(id, query);</span>
+<span class="fc" id="L205">        return ResponseEntity.ok().body(humanResourceDtos);</span>
+    }
+
+
+    @ApiOperation(&quot;Get human resource by career id&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_HR')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/by-career&quot;)
+    ResponseEntity&lt;HumanResourceLightDto&gt; getHumanResourceByCareerId(@RequestParam(name = &quot;career_id&quot;) Long careerId) {
+
+<span class="nc" id="L215">        log.info(&quot;get human resource by career id {}&quot;, careerId);</span>
+<span class="nc" id="L216">        Optional&lt;HumanResourceLightDto&gt; lightHr = humanResourceService.getHumanResourceByCareerId(careerId);</span>
+
+<span class="nc" id="L218">        return lightHr.map(hr -&gt; ResponseEntity.ok().body(hr)).orElseGet(() -&gt; ResponseEntity.notFound().build());</span>
+    }
+
+    /************************************* Post Apis *********************************************************/
+
+    @ApiOperation(&quot;Create new manager&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_CREATE_MANAGER')&quot;)
+    @PostMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/managers&quot;)
+    ResponseEntity&lt;HumanResourceDto&gt; createManager(@RequestBody @Valid HumanResourceRequest humanResourceRequest, @RequestParam String language) {
+<span class="nc" id="L228">        log.info(&quot;create new manager&quot;);</span>
+<span class="nc" id="L229">        validationService.validateCreateHumanResource(humanResourceRequest);</span>
+<span class="nc" id="L230">        HumanResourceDto humanResourceDto = humanResourceService.createManager(humanResourceRequest, language);</span>
+<span class="nc" id="L231">        final URI location = ServletUriComponentsBuilder.fromCurrentServletMapping().path(&quot;/api/v1/human-resources/{id}&quot;).build().expand(humanResourceDto.getId()).toUri();</span>
+<span class="nc" id="L232">        return ResponseEntity.created(location).body(humanResourceDto);</span>
+    }
+
+    @ApiOperation(&quot;Create new recruiter&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_CREATE_RECRUITER')&quot;)
+    @PostMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/recruiters&quot;)
+    ResponseEntity&lt;HumanResourceDto&gt; createRecruiter(@RequestBody @Valid HumanResourceRequest humanResourceRequest) {
+<span class="nc" id="L240">        log.info(&quot;create new recruiter&quot;);</span>
+<span class="nc" id="L241">        validationService.validateCreateHumanResource(humanResourceRequest);</span>
+<span class="nc" id="L242">        HumanResourceDto humanResourceDto = humanResourceService.createRecruiter(humanResourceRequest);</span>
+<span class="nc" id="L243">        final URI location = ServletUriComponentsBuilder.fromCurrentServletMapping().path(&quot;/api/v1/human-resources/{id}&quot;).build().expand(humanResourceDto.getId()).toUri();</span>
+<span class="nc" id="L244">        return ResponseEntity.created(location).body(humanResourceDto);</span>
+    }
+
+    @ApiOperation(&quot;Create new consultant&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_CREATE_CONSULTANT')&quot;)
+    @PostMapping(consumes = MimeTypeUtils.APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/consultants&quot;)
+    ResponseEntity&lt;HumanResourceDto&gt; createConsultant(@RequestBody @Valid HumanResourceRequest humanResourceRequest, @RequestParam String language) {
+<span class="fc" id="L252">        log.info(&quot;create new consultant&quot;);</span>
+<span class="fc" id="L253">        validationService.validateCreateHumanResource(humanResourceRequest);</span>
+<span class="fc" id="L254">        HumanResourceDto humanResourceDto = humanResourceService.createConsultant(humanResourceRequest, language);</span>
+<span class="fc" id="L255">        final URI location = ServletUriComponentsBuilder.fromCurrentServletMapping().path(&quot;/api/v1/human-resources/{id}&quot;).build().expand(humanResourceDto.getId()).toUri();</span>
+<span class="fc" id="L256">        return ResponseEntity.created(location).body(humanResourceDto);</span>
+    }
+
+    @ApiOperation(&quot;Create new company admin&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_CREATE_COMPANY_ADMIN')&quot;)
+    @PostMapping(consumes = MimeTypeUtils.APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/company-admin&quot;)
+    ResponseEntity&lt;HumanResourceDto&gt; createCompanyAdmin(@RequestBody @Valid HumanResourceRequest humanResourceRequest, @RequestParam String language) {
+<span class="fc" id="L264">        log.info(&quot;create new company admin&quot;);</span>
+<span class="fc" id="L265">        validationService.validateCreateHumanResource(humanResourceRequest);</span>
+<span class="fc" id="L266">        HumanResourceDto humanResourceDto = humanResourceService.createCompanyAdmin(humanResourceRequest, language);</span>
+<span class="fc" id="L267">        final URI location = ServletUriComponentsBuilder.fromCurrentServletMapping().path(&quot;/api/v1/human-resources/{id}&quot;).build().expand(humanResourceDto.getId()).toUri();</span>
+<span class="fc" id="L268">        return ResponseEntity.created(location).body(humanResourceDto);</span>
+    }
+
+    @ApiOperation(&quot;Create new candidate&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_CREATE_CANDIDATE')&quot;)
+    @PostMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/candidates&quot;)
+    ResponseEntity&lt;HumanResourceDto&gt; createCandidate(@RequestBody @Valid HumanResourceRequest humanResourceRequest) {
+<span class="nc" id="L276">        log.info(&quot;create new candidate&quot;);</span>
+<span class="nc" id="L277">        validationService.validateCreateHumanResource(humanResourceRequest);</span>
+<span class="nc" id="L278">        HumanResourceDto humanResourceDto = humanResourceService.createCandidate(humanResourceRequest);</span>
+<span class="nc" id="L279">        final URI location = ServletUriComponentsBuilder.fromCurrentServletMapping().path(&quot;/api/v1/human-resources/{id}&quot;).build().expand(humanResourceDto.getId()).toUri();</span>
+<span class="nc" id="L280">        return ResponseEntity.created(location).body(humanResourceDto);</span>
+    }
+
+    /************************************* Put Apis *********************************************************/
+
+    @ApiOperation(&quot;Update human resource by id&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_UPDATE_SUPER_ADMIN','PERM_UPDATE_COMPANY_ADMIN','PERM_UPDATE_MANAGER','PERM_UPDATE_RECRUITER','PERM_UPDATE_CANDIDATE','PERM_UPDATE_CONSULTANT')&quot;)
+    @PutMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/{id}&quot;)
+    ResponseEntity&lt;HumanResourceDto&gt; updateHumanResource(@PathVariable(&quot;id&quot;) Long id, @RequestBody @Valid HumanResourceRequest humanResourceRequest) {
+<span class="fc" id="L290">        log.info(&quot;update human resource by id {}&quot;);</span>
+<span class="fc" id="L291">        HumanResourceDto humanResourceDto = humanResourceService.update(id, humanResourceRequest);</span>
+<span class="fc" id="L292">        return ResponseEntity.ok().body(humanResourceDto);</span>
+
+    }
+
+    @ApiOperation(&quot;Update already logged in&quot;)
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_UPDATE_COMPANY_ADMIN','PERM_UPDATE_MANAGER','PERM_UPDATE_RECRUITER','PERM_UPDATE_CANDIDATE','PERM_UPDATE_CONSULTANT')&quot;)
+    @PutMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/update-logged-in&quot;)
+    ResponseEntity&lt;HumanResourceDto&gt; updateAlreadyLoggedIn(@RequestParam Long id) {
+<span class="nc" id="L300">        log.info(&quot;update already logged in&quot;);</span>
+<span class="nc" id="L301">        HumanResourceDto humanResourceDto = humanResourceService.setLoggedInTrue(id);</span>
+<span class="nc" id="L302">        return ResponseEntity.ok(humanResourceDto);</span>
+
+    }
+
+    @ApiOperation(&quot;Update password by id user&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_UPDATE_PASSWORD')&quot;)
+    @PutMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/users/update/{password}&quot;)
+    ResponseEntity&lt;OauthUserDto&gt; update(@PathVariable String password) {
+<span class="nc" id="L311">        log.info(&quot;update  password by id user {}&quot;);</span>
+<span class="nc" id="L312">        OauthUserDto currentUser = oAuthRemote.getOAuthUser();</span>
+
+<span class="nc" id="L314">        OauthUserDto oAuthUser = oAuthRemote.updateOAuthUser(currentUser.getId(), password);</span>
+<span class="nc" id="L315">        oAuthUser.setPassword(password);</span>
+<span class="nc" id="L316">        return ResponseEntity.ok().body(oAuthUser);</span>
+
+    }
+
+    @ApiOperation(&quot;Update password by id user&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_UPDATE_PASSWORD')&quot;)
+    @PutMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/users/update2/{password}&quot;)
+    ResponseEntity&lt;OauthUserDto&gt; update2(@RequestParam String id, @PathVariable String password) {
+<span class="nc" id="L325">        log.info(&quot;update  password by id user {}&quot;);</span>
+<span class="nc" id="L326">        OauthUserDto currentUser = oAuthRemote.getOAuthUser(id);</span>
+<span class="nc" id="L327">        OauthUserDto oAuthUser = oAuthRemote.updateOAuthUser2(currentUser.getId(), password);</span>
+<span class="nc" id="L328">        oAuthUser.setPassword(password);</span>
+<span class="nc" id="L329">        return ResponseEntity.ok().body(oAuthUser);</span>
+
+    }
+
+
+    @ApiOperation(&quot;Update supervisor to Human Resource&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_UPDATE_MANAGER','PERM_UPDATE_RECRUITER','PERM_UPDATE_CANDIDATE','PERM_UPDATE_CONSULTANT')&quot;)
+    @PutMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/{id}/supervisor/{id_supervisor}&quot;)
+    void assignSupervisorToHr(@PathVariable Long id, @PathVariable(&quot;id_supervisor&quot;) Long supervisorId) {
+<span class="nc" id="L339">        log.info(&quot;add supervisor {} to Human Resource {}&quot;, supervisorId, id);</span>
+<span class="nc" id="L340">        humanResourceService.assignSupervisorToHumanResource(id, supervisorId);</span>
+<span class="nc" id="L341">    }</span>
+
+    @ApiOperation(&quot;Update human resource by id&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_UPDATE_SUPER_ADMIN','PERM_UPDATE_COMPANY_ADMIN','PERM_UPDATE_MANAGER','PERM_UPDATE_RECRUITER','PERM_UPDATE_CANDIDATE','PERM_UPDATE_CONSULTANT')&quot;)
+    @PutMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/{id}/avatar&quot;)
+    ResponseEntity&lt;HumanResourceDto&gt; updateHumanResourceAvatar(@PathVariable(&quot;id&quot;) Long id, @RequestBody @Valid String avatarUrl) {
+<span class="nc" id="L348">        HumanResourceDto humanResourceDto = humanResourceService.updateAvatar(id, avatarUrl);</span>
+<span class="nc" id="L349">        return ResponseEntity.ok().body(humanResourceDto);</span>
+
+    }
+
+    /************************************* Delete Apis *********************************************************/
+
+    @ApiOperation(&quot;delete human resource&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_CREATE_COMPANY_ADMIN','PERM_CREATE_MANAGER','PERM_CREATE_RECRUITER','PERM_CREATE_CANDIDATE','PERM_CREATE_CONSULTANT')&quot;)
+    @DeleteMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/{id}&quot;)
+    ResponseEntity&lt;Void&gt; deleteHumanRessource(@PathVariable Long id) {
+<span class="nc" id="L360">        log.info(&quot;delete human resource by id {}&quot;, id);</span>
+<span class="nc" id="L361">        humanResourceService.delete(id);</span>
+<span class="nc" id="L362">        return ResponseEntity.ok().build();</span>
+    }
+
+
+    @ApiOperation(&quot;Get human resource by id&quot;)
+    @Timed
+    // @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_HR')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/get-hierarchy/{id}&quot;)
+    List&lt;HumanResourceDto&gt; getHierarchy(@PathVariable Long id) {
+<span class="nc" id="L371">        log.info(&quot;get hierarchy by id = {}&quot;, id);</span>
+<span class="nc" id="L372">        List&lt;HumanResourceDto&gt; humanResourceDto = humanResourceService.getHierarchy(id);</span>
+<span class="nc" id="L373">        return humanResourceDto;</span>
+    }
+
+    @ApiOperation(&quot;Get all managers by company id&quot;)
+    @Timed
+    //@PreAuthorize(&quot;hasAnyAuthority('PERM_GET_HR')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/managers/by-company&quot;)
+    ResponseEntity&lt;List&lt;HumanResourceDto&gt;&gt; getAllManagersByCompanyId(@RequestParam(name = &quot;company_id&quot;) Long companyId) {
+<span class="nc" id="L381">        log.info(&quot;get all managers by company = {}&quot;, companyId);</span>
+<span class="nc" id="L382">        List&lt;HumanResourceDto&gt; humanResourceDtos = humanResourceService.getAllManagersByCompanyId(companyId);</span>
+<span class="nc" id="L383">        return ResponseEntity.ok().body(humanResourceDtos);</span>
+    }
+
+    @ApiOperation(&quot;Get all consultants by company id&quot;)
+    @Timed
+    //@PreAuthorize(&quot;hasAnyAuthority('PERM_GET_HR')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/consultants/by-company&quot;)
+    ResponseEntity&lt;List&lt;HumanResourceDto&gt;&gt; getAllConsultantsByCompanyId(@RequestParam(name = &quot;company_id&quot;) Long companyId) {
+<span class="nc" id="L391">        log.info(&quot;get all consultants by company = {}&quot;, companyId);</span>
+<span class="nc" id="L392">        List&lt;HumanResourceDto&gt; humanResourceDtos = humanResourceService.getAllConsultantByCompanyId(companyId);</span>
+<span class="nc" id="L393">        return ResponseEntity.ok().body(humanResourceDtos);</span>
+    }
+
+    @ApiOperation(&quot;Get sas token&quot;)
+    @Timed
+    //@PreAuthorize(&quot;hasAnyAuthority('PERM_GET_HR')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/sas-token&quot;)
+    Map&lt;String, String&gt; generateSasToken() {
+<span class="nc" id="L401">        log.info(&quot;get sas token&quot;);</span>
+<span class="nc" id="L402">        Map&lt;String, String&gt; token = humanResourceService.callblobRestAPIWithSas();</span>
+<span class="nc" id="L403">        return token;</span>
+    }
+
+    @ApiOperation(&quot;Upload an avatar&quot;)
+    @Timed
+    //@PostMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/human-resources/avatar&quot;, consumes = &quot;multipart/form-data&quot;)
+    @PostMapping(produces = APPLICATION_JSON_VALUE, consumes = MULTIPART_FORM_DATA_VALUE, path = &quot;/v1/human-resources/{id}/blob&quot;)
+    public ResponseEntity uploadAvatar(@PathVariable(&quot;id&quot;) Long id, @RequestPart(name = &quot;file&quot;) MultipartFile file) throws IOException {
+<span class="nc" id="L411">        log.info(&quot;Upload avatar to hr {}&quot;, id);</span>
+<span class="nc" id="L412">        humanResourceService.uploadAvatar(id, file);</span>
+<span class="nc" id="L413">        return ResponseEntity.ok().build();</span>
+    }
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

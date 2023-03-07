@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HrProperties.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">hr-ms</a> &gt; <a href="index.source.html" class="el_package">com.talenteo.hr.config</a> &gt; <span class="el_source">HrProperties.java</span></div><h1>HrProperties.java</h1><pre class="source lang-java linenums">package com.talenteo.hr.config;
+
+import lombok.Data;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+
+<span class="pc bpc" id="L7" title="48 of 54 branches missed.">@Data</span>
+@Configuration
+public class HrProperties {
+
+    @Value(&quot;${front.url}&quot;)
+<span class="fc" id="L12">    private String frontUrl;</span>
+
+    @Value(&quot;${front.mail.confirm.url}&quot;)
+<span class="fc" id="L15">    private String routeMailConfirm;</span>
+
+    @Value(&quot;${azure-storage.client-id}&quot;)
+<span class="fc" id="L18">    private String clientId;</span>
+    @Value(&quot;${azure-storage.client-secret}&quot;)
+<span class="fc" id="L20">    private String clientSecret;</span>
+    @Value(&quot;${azure-storage.tenant-id}&quot;)
+<span class="fc" id="L22">    private String tenantId;</span>
+    @Value(&quot;${azure-storage.endpoint}&quot;)
+<span class="fc" id="L24">    private String endpoint;</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HumanResourceRequestConverter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">hr-ms</a> &gt; <a href="index.source.html" class="el_package">com.talenteo.hr.converter</a> &gt; <span class="el_source">HumanResourceRequestConverter.java</span></div><h1>HumanResourceRequestConverter.java</h1><pre class="source lang-java linenums">package com.talenteo.hr.converter;
+
+
+import com.talenteo.hr.dto.HumanResourceRequest;
+import com.talenteo.hr.model.entity.HumanResource;
+import com.talenteo.hr.model.entity.Nationality;
+import com.talenteo.hr.repository.NationalityRepository;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.stereotype.Component;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+<span class="fc" id="L18">@Slf4j</span>
+<span class="fc" id="L19">@AllArgsConstructor</span>
+@Component
+//@Data(staticConstructor = &quot;newInstance&quot;)
+public class HumanResourceRequestConverter implements Converter&lt;HumanResourceRequest, HumanResource&gt; {
+
+
+    private final NationalityRepository nationalityRepository;
+
+    @Override
+    public HumanResource convert(HumanResourceRequest humanResourceRequest) {
+<span class="pc bpc" id="L29" title="1 of 2 branches missed.">        if (Objects.isNull(humanResourceRequest)) {</span>
+<span class="nc" id="L30">            return null;</span>
+        }
+<span class="pc bpc" id="L32" title="1 of 2 branches missed.">        List&lt;Nationality&gt; nationalityList = Objects.nonNull(humanResourceRequest.getNationalities()) ? humanResourceRequest.getNationalities().stream()</span>
+<span class="pc" id="L33">                .map(nationality -&gt; nationalityRepository.findByCountry(nationality)).collect(Collectors.toList()) : Arrays.asList();</span>
+
+<span class="fc" id="L35">        return HumanResource.builder()</span>
+<span class="fc" id="L36">                .id(humanResourceRequest.getId())</span>
+<span class="fc" id="L37">                .firstname(humanResourceRequest.getFirstname())</span>
+<span class="fc" id="L38">                .lastname(humanResourceRequest.getLastname())</span>
+<span class="fc" id="L39">                .email(humanResourceRequest.getEmail())</span>
+<span class="fc" id="L40">                .gender(humanResourceRequest.getGender())</span>
+<span class="fc" id="L41">                .avatar(humanResourceRequest.getAvatar())</span>
+<span class="fc" id="L42">                .role(humanResourceRequest.getRole())</span>
+<span class="fc" id="L43">                .birthDate(humanResourceRequest.getBirthDate())</span>
+<span class="fc" id="L44">                .phoneNumber(humanResourceRequest.getPhoneNumber())</span>
+<span class="fc" id="L45">                .address(AddressDtoConverter.newInstance().convert(humanResourceRequest.getAddress()))</span>
+<span class="fc" id="L46">                .supervisor(HumanResourceDtoConverter.newInstance().convert(humanResourceRequest.getSupervisor()))</span>
+<span class="fc" id="L47">                .visibility(humanResourceRequest.getVisibility())</span>
+<span class="fc" id="L48">                .companyEntity(CompanyEntityDtoConverter.newInstance().convert(humanResourceRequest.getCompanyEntity()))</span>
+<span class="fc" id="L49">                .alreadyLoggedIn(humanResourceRequest.isAlreadyLoggedIn())</span>
+<span class="fc" id="L50">                .nationalities(nationalityList)</span>
+<span class="fc" id="L51">                .isActive(humanResourceRequest.isActive())</span>
+<span class="fc" id="L52">                .build();</span>
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

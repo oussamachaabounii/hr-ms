@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CompanyService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">hr-ms</a> &gt; <a href="index.source.html" class="el_package">com.talenteo.hr.service</a> &gt; <span class="el_source">CompanyService.java</span></div><h1>CompanyService.java</h1><pre class="source lang-java linenums">package com.talenteo.hr.service;
+
+import com.talenteo.hr.converter.CompanyConverter;
+import com.talenteo.hr.converter.CompanyRequestConverter;
+import com.talenteo.hr.dto.CompanyDto;
+import com.talenteo.hr.dto.CompanyRequest;
+import com.talenteo.hr.model.entity.Company;
+import com.talenteo.hr.repository.CompanyEntityRepository;
+import com.talenteo.hr.repository.CompanyRepository;
+import com.talenteo.hr.repository.HumanResourceRepository;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Component
+<span class="fc" id="L20">@AllArgsConstructor</span>
+public class CompanyService {
+
+    private final CompanyRepository companyRepository;
+    private final CompanyEntityRepository companyEntityRepository;
+    private final HumanResourceRepository humanResourceRepository;
+    private final HumanResourceService humanResourceService;
+    private final CompanyEntityService companyEntityService;
+
+
+
+    public CompanyDto create(CompanyRequest companyRequest) {
+<span class="nc" id="L32">        Company c = CompanyRequestConverter.newInstance().convert(companyRequest);</span>
+<span class="nc" id="L33">        c.setIsActive(true);</span>
+<span class="nc" id="L34">        Company company = companyRepository.save(c);</span>
+<span class="nc" id="L35">        return CompanyConverter.newInstance().convert(company);</span>
+    }
+
+    public List&lt;CompanyDto&gt; getAll() {
+<span class="fc" id="L39">        List&lt;Company&gt; companyDtos = companyRepository.findAllCompanies();</span>
+<span class="fc" id="L40">        return companyDtos.stream().map(company -&gt; CompanyConverter.newInstance().convert(company)).collect(Collectors.toList());</span>
+
+  }
+
+    public Optional&lt;CompanyDto&gt; getById(Long id) {
+<span class="fc" id="L45">        Optional&lt;Company&gt; company = companyRepository.findById(id);</span>
+<span class="fc" id="L46">        return company.map(c -&gt; CompanyConverter.newInstance().convert(c));</span>
+    }
+
+    public Optional&lt;CompanyDto&gt; getByLabel(String label) {
+<span class="nc" id="L50">        Optional&lt;Company&gt; company = companyRepository.findByLabel(label);</span>
+<span class="nc" id="L51">        return company.map(c -&gt; CompanyConverter.newInstance().convert(c));</span>
+    }
+
+    public void delete(Long id) {
+<span class="nc" id="L55">        Optional&lt;Company&gt; c = companyRepository.findById(id);</span>
+<span class="nc" id="L56">      c.get().setIsActive(false);</span>
+<span class="nc" id="L57">       companyRepository.save(c.get());</span>
+
+
+
+
+<span class="nc" id="L62">    }</span>
+
+    public List&lt;CompanyDto&gt; filterCompaniesByKeyword(String query) {
+<span class="nc" id="L65">        List&lt;Company&gt; c = companyRepository.findByKeyword(query);</span>
+<span class="nc" id="L66">        return c.stream().map(company -&gt; CompanyConverter.newInstance().convert(company)).collect(Collectors.toList());</span>
+
+    }
+
+    public CompanyDto update(Long id, CompanyRequest companyRequest) {
+<span class="nc" id="L71">        Company c = companyRepository.findById(id).orElse(null);</span>
+<span class="nc" id="L72">        c.setActivityField(companyRequest.getActivityField());</span>
+<span class="nc" id="L73">        c.setCreationDate(companyRequest.getCreationDate());</span>
+<span class="nc" id="L74">        c.setDescription(companyRequest.getDescription());</span>
+<span class="nc" id="L75">        c.setLabel(companyRequest.getLabel());</span>
+<span class="nc" id="L76">        c.setPhoneNumber(companyRequest.getPhoneNumber());</span>
+<span class="nc" id="L77">        c.setSize(companyRequest.getSize());</span>
+<span class="nc" id="L78">        c.setType(companyRequest.getType());</span>
+<span class="nc" id="L79">        Company company = companyRepository.save(c);</span>
+<span class="nc" id="L80">        return CompanyConverter.newInstance().convert(company);</span>
+
+    }
+
+    public List&lt;List&gt; companiesStatistics() {
+<span class="nc" id="L85">        List&lt;String&gt; listLabels=new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L86">        List&lt;Integer&gt; listNumberEntities=new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L87">        List&lt;Integer&gt; listNumberAccounts=new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L88">        List&lt;List&gt; listResult=new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L89">        List&lt;Company&gt; companies = companyRepository.findAll();</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        for(int i=0;i&lt;companies.size();i++){</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">            if (companies.get(i).getIsActive()==true) {</span>
+<span class="nc" id="L92">                listLabels.add(companies.get(i).getLabel());</span>
+<span class="nc" id="L93">                listNumberEntities.add(companyEntityService.getByCompanyId(companies.get(i).getId()).size());</span>
+<span class="nc" id="L94">                listNumberAccounts.add(humanResourceService.getAllByCompanyId(companies.get(i).getId()).size());</span>
+            }
+        }
+<span class="nc" id="L97">        listResult.add(listLabels);</span>
+<span class="nc" id="L98">        listResult.add(listNumberEntities);</span>
+<span class="nc" id="L99">        listResult.add(listNumberAccounts);</span>
+
+
+
+<span class="nc" id="L103">        return listResult;</span>
+
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

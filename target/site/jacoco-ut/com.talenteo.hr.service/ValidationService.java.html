@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ValidationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">hr-ms</a> &gt; <a href="index.source.html" class="el_package">com.talenteo.hr.service</a> &gt; <span class="el_source">ValidationService.java</span></div><h1>ValidationService.java</h1><pre class="source lang-java linenums">package com.talenteo.hr.service;
+
+
+import com.easyms.rest.ms.rest.Validator;
+import com.talenteo.common.error.TalenteoCommonMessages;
+import com.talenteo.hr.dto.*;
+import com.talenteo.hr.model.entity.*;
+import com.talenteo.hr.repository.*;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
+
+import javax.transaction.Transactional;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+@Component
+<span class="fc" id="L20">@AllArgsConstructor</span>
+@Transactional
+<span class="fc" id="L22">@Slf4j</span>
+public class ValidationService {
+
+
+    private final HumanResourceRepository humanResourceRepository;
+    private final AddressRepository addressRepository;
+    private final CompanyRepository companyRepository;
+    private final CompanyEntityRepository companyEntityRepository;
+    private final SalaryHistoryRepository salaryHistoryRepository;
+
+    public void validateCreateHumanResource(HumanResourceRequest humanResourceRequest) {
+<span class="fc" id="L33">        Optional&lt;HumanResource&gt; humanResource = humanResourceRepository.findByEmail(humanResourceRequest.getEmail());</span>
+
+<span class="fc" id="L35">        Validator.of(humanResource)</span>
+<span class="fc" id="L36">                .validateIf(Optional::isPresent, () -&gt; new IllegalStateException(TalenteoCommonMessages.email_used.getErrorKey()))</span>
+<span class="fc" id="L37">                .execute();</span>
+
+<span class="fc" id="L39">    }</span>
+
+
+    public void validateUpdateHumanResource(Long id, HumanResourceRequest humanResourceRequest) {
+<span class="fc" id="L43">        HumanResource humanResource = humanResourceRepository.findById(id).orElse(null);</span>
+<span class="fc" id="L44">        Validator.of(humanResource)</span>
+<span class="fc" id="L45">                .validateIf(Objects::isNull, () -&gt; new ResourceAccessException(TalenteoCommonMessages.hr_not_found.getErrorKey()))</span>
+<span class="fc" id="L46">                .ifValid()</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">                .ifMatch(humanResource.getEmail(), email -&gt; !email.equalsIgnoreCase(humanResourceRequest.getEmail()))</span>
+<span class="fc" id="L48">                .validateIf(hr -&gt; this.emailAlreadyUsed(humanResourceRequest.getEmail(), id), () -&gt; new IllegalStateException(TalenteoCommonMessages.email_used.getErrorKey()))</span>
+<span class="fc" id="L49">                .execute();</span>
+<span class="fc" id="L50">    }</span>
+
+    public void validateCreateCompanyEntity(CompanyEntityRequest companyEntityRequest) {
+<span class="nc" id="L53">        CompanyEntity companyEntity = companyEntityRepository.findByLabel(companyEntityRequest.getLabel()).orElse(null);</span>
+<span class="nc" id="L54">        Validator.of(companyEntity)</span>
+<span class="nc" id="L55">                .validateIf(Objects::nonNull, () -&gt; new IllegalStateException(TalenteoCommonMessages.label_used.getErrorKey()))</span>
+<span class="nc" id="L56">                .execute();</span>
+<span class="nc" id="L57">    }</span>
+
+    public void validateUpdateCompanyEntity(Long id, CompanyEntityRequest companyEntityRequest) {
+<span class="nc" id="L60">        CompanyEntity companyEntity = companyEntityRepository.findByLabel(companyEntityRequest.getLabel()).orElse(null);</span>
+<span class="nc" id="L61">        Validator.of(companyEntity)</span>
+<span class="nc" id="L62">                .validateIf(Objects::isNull, () -&gt; new ResourceAccessException(TalenteoCommonMessages.company_not_found.getErrorKey()))</span>
+<span class="nc" id="L63">                .ifValid()</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">                .ifMatch(companyEntity.getLabel(), label -&gt; !label.equalsIgnoreCase(companyEntity.getLabel()))</span>
+<span class="nc" id="L65">                .validateIf(hr -&gt; this.labelAlreadyUsed(companyEntity.getLabel(), id), () -&gt; new IllegalStateException(TalenteoCommonMessages.label_used.getErrorKey()))</span>
+<span class="nc" id="L66">                .execute();</span>
+<span class="nc" id="L67">    }</span>
+
+    public void validateCreateCompany(CompanyRequest companyRequest) {
+<span class="fc" id="L70">        Company company = companyRepository.findByLabel(companyRequest.getLabel()).orElse(null);</span>
+<span class="fc" id="L71">        Validator.of(company)</span>
+<span class="fc" id="L72">                .validateIf(Objects::nonNull, () -&gt; new IllegalStateException(TalenteoCommonMessages.label_used.getErrorKey()))</span>
+<span class="fc" id="L73">                .execute();</span>
+<span class="fc" id="L74">    }</span>
+
+    public void validateUpdateCompany(Long id, CompanyRequest companyRequest) {
+<span class="fc" id="L77">        Company company = companyRepository.findById(id).orElse(null);</span>
+<span class="fc" id="L78">        Validator.of(company)</span>
+<span class="fc" id="L79">                .validateIf(Objects::isNull, () -&gt; new ResourceAccessException(TalenteoCommonMessages.company_not_found.getErrorKey()))</span>
+<span class="fc" id="L80">                .ifValid()</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">                .ifMatch(company.getLabel(), label -&gt; !label.equalsIgnoreCase(companyRequest.getLabel()))</span>
+<span class="fc" id="L82">                .validateIf(hr -&gt; this.labelAlreadyUsed(companyRequest.getLabel(), id), () -&gt; new IllegalStateException(TalenteoCommonMessages.label_used.getErrorKey()))</span>
+<span class="fc" id="L83">                .execute();</span>
+<span class="fc" id="L84">    }</span>
+
+    public void validateUpdateAddress(Long id, AddressRequest addressRequest) {
+<span class="fc" id="L87">        Address address = addressRepository.findById(id).orElse(null);</span>
+<span class="fc" id="L88">        Validator.of(address)</span>
+<span class="fc" id="L89">                .validateIf(Objects::isNull, () -&gt; new ResourceAccessException(TalenteoCommonMessages.address_not_found.getErrorKey()))</span>
+<span class="fc" id="L90">                .ifValid()</span>
+<span class="fc" id="L91">                .execute();</span>
+<span class="fc" id="L92">    }</span>
+
+
+    private boolean emailAlreadyUsed(String email, Long id) {
+<span class="fc" id="L96">        HumanResource humanResource = humanResourceRepository.findByEmail(email).orElse(null);</span>
+<span class="pc bpc" id="L97" title="1 of 4 branches missed.">        return Objects.nonNull(humanResource) &amp;&amp; !humanResource.getId().equals(id);</span>
+    }
+
+    private boolean labelAlreadyUsed(String label, Long id) {
+<span class="fc" id="L101">        Company company = companyRepository.findByLabel(label).orElse(null);</span>
+<span class="pc bpc" id="L102" title="1 of 4 branches missed.">        return Objects.nonNull(company) &amp;&amp; !company.getId().equals(id);</span>
+    }
+
+    public void validateCreateSalaryHistory(SalaryHistoryRequest salaryHistoryRequest) {
+<span class="nc" id="L106">        List&lt;SalaryHistory&gt; historyList = Optional.of(salaryHistoryRepository.findByHr_Id(salaryHistoryRequest.getHrId())).orElse(null);</span>
+
+<span class="nc" id="L108">        Validator.of(historyList)</span>
+<span class="nc" id="L109">                .validateIf(Objects::isNull, () -&gt; new ResourceAccessException(TalenteoCommonMessages.hr_not_found.getErrorKey()))</span>
+<span class="nc" id="L110">                .ifValid()</span>
+<span class="nc" id="L111">                .execute();</span>
+
+
+<span class="nc" id="L114">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

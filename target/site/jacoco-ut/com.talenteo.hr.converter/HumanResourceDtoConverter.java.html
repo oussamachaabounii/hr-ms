@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HumanResourceDtoConverter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">hr-ms</a> &gt; <a href="index.source.html" class="el_package">com.talenteo.hr.converter</a> &gt; <span class="el_source">HumanResourceDtoConverter.java</span></div><h1>HumanResourceDtoConverter.java</h1><pre class="source lang-java linenums">package com.talenteo.hr.converter;
+
+import com.talenteo.hr.dto.HumanResourceDto;
+import com.talenteo.hr.model.entity.HumanResource;
+import lombok.Data;
+import org.springframework.core.convert.converter.Converter;
+
+import java.util.Objects;
+
+<span class="pc bnc" id="L10" title="All 6 branches missed.">@Data(staticConstructor = &quot;newInstance&quot;)</span>
+public class HumanResourceDtoConverter implements Converter&lt;HumanResourceDto, HumanResource&gt; {
+    @Override
+    public HumanResource convert(HumanResourceDto humanResourceDto) {
+<span class="pc bpc" id="L14" title="1 of 2 branches missed.">        if (Objects.isNull(humanResourceDto)) {</span>
+<span class="fc" id="L15">            return null;</span>
+        }
+<span class="nc" id="L17">        return HumanResource.builder()</span>
+<span class="nc" id="L18">                .id(humanResourceDto.getId())</span>
+<span class="nc" id="L19">                .firstname(humanResourceDto.getFirstname())</span>
+<span class="nc" id="L20">                .lastname(humanResourceDto.getLastname())</span>
+<span class="nc" id="L21">                .email(humanResourceDto.getEmail())</span>
+<span class="nc" id="L22">                .gender(humanResourceDto.getGender())</span>
+<span class="nc" id="L23">                .avatar(humanResourceDto.getAvatar())</span>
+<span class="nc" id="L24">                .role(humanResourceDto.getRole())</span>
+<span class="nc" id="L25">                .birthDate(humanResourceDto.getBirthDate())</span>
+<span class="nc" id="L26">                .phoneNumber(humanResourceDto.getPhoneNumber())</span>
+<span class="nc" id="L27">                .address(AddressDtoConverter.newInstance().convert(humanResourceDto.getAddress()))</span>
+<span class="nc" id="L28">                .visibility(humanResourceDto.getVisibility())</span>
+                //.supervisor(HumanResourceDtoConverter.newInstance().convert(humanResourceDto.getSupervisor()))
+<span class="nc" id="L30">                .companyEntity(CompanyEntityDtoConverter.newInstance().convert(humanResourceDto.getCompanyEntity()))</span>
+<span class="nc" id="L31">                .alreadyLoggedIn(humanResourceDto.isAlreadyLoggedIn())</span>
+<span class="nc" id="L32">.isActive(humanResourceDto.isActive())</span>
+<span class="nc" id="L33">                .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

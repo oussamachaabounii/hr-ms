@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CompanyResource.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">hr-ms</a> &gt; <a href="index.source.html" class="el_package">com.talenteo.hr.api</a> &gt; <span class="el_source">CompanyResource.java</span></div><h1>CompanyResource.java</h1><pre class="source lang-java linenums">package com.talenteo.hr.api;
+
+import com.talenteo.hr.dto.CompanyDto;
+import com.talenteo.hr.dto.CompanyRequest;
+import com.talenteo.hr.service.CompanyService;
+import com.talenteo.hr.service.ValidationService;
+import io.micrometer.core.annotation.Timed;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import javax.validation.Valid;
+import java.net.URI;
+import java.util.List;
+import java.util.Optional;
+
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+
+<span class="fc" id="L27">@Slf4j</span>
+@RestController
+@RequestMapping(&quot;/api&quot;)
+@Validated
+<span class="fc" id="L31">@AllArgsConstructor</span>
+@Timed
+public class CompanyResource {
+
+    private final CompanyService companyService;
+    private final ValidationService validationService;
+
+
+    @ApiOperation(&quot;create new company&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_CREATE_COMPANY')&quot;)
+    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, path = &quot;/v1/companies&quot;)
+    ResponseEntity&lt;CompanyDto&gt; createCompany(@RequestBody @Valid CompanyRequest companyRequest) {
+<span class="nc" id="L44">        log.info(&quot;create new company&quot;);</span>
+<span class="nc" id="L45">        validationService.validateCreateCompany(companyRequest);</span>
+<span class="nc" id="L46">        CompanyDto companyDto = companyService.create(companyRequest);</span>
+<span class="nc" id="L47">        final URI location = ServletUriComponentsBuilder.fromCurrentServletMapping().path(&quot;/api/v1/companies/{id}&quot;).build().expand(companyDto.getId()).toUri();</span>
+<span class="nc" id="L48">        return ResponseEntity.created(location).body(companyDto);</span>
+    }
+
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = &quot;page&quot;, dataType = &quot;int&quot;, paramType = &quot;query&quot;,
+                    value = &quot;Results page you want to retrieve (0..N)&quot;, required = true),
+            @ApiImplicitParam(name = &quot;size&quot;, dataType = &quot;int&quot;, paramType = &quot;query&quot;,
+                    value = &quot;Number of records per page.&quot;, required = true),
+            @ApiImplicitParam(name = &quot;sort&quot;, allowMultiple = true, dataType = &quot;string&quot;, paramType = &quot;query&quot;,
+                    value = &quot;Sorting criteria in the format: property(,asc|desc). &quot; +
+                            &quot;Default sort order is ascending. &quot; +
+                            &quot;Multiple sort criteria are supported.&quot;)
+    })
+    @ApiOperation(&quot;search all companies&quot;)
+    @Timed
+   @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_COMPANY')&quot;)
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, path = &quot;/v1/companies&quot;)
+    ResponseEntity&lt;List&lt;CompanyDto&gt;&gt; getAllCompanies() {
+<span class="fc" id="L66">        log.info(&quot;get all companies&quot;);</span>
+<span class="fc" id="L67">        List&lt;CompanyDto&gt; companyDtos = companyService.getAll();</span>
+<span class="fc" id="L68">        return ResponseEntity.ok().body(companyDtos);</span>
+    }
+
+    @ApiOperation(&quot;search company by id&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_COMPANY')&quot;)
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, path = &quot;/v1/companies/{id}&quot;)
+    ResponseEntity&lt;CompanyDto&gt; getCompanyById(@PathVariable Long id) {
+<span class="fc" id="L76">        log.info(&quot;search Company by id {} &quot;, id);</span>
+<span class="fc" id="L77">        Optional&lt;CompanyDto&gt; companyDto = companyService.getById(id);</span>
+<span class="fc" id="L78">        return companyDto.map(company -&gt; ResponseEntity.ok().body(company)).orElseGet(() -&gt; ResponseEntity.notFound().build());</span>
+    }
+
+    @ApiOperation(&quot;filter company by keyword&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_CANDIDATE','PERM_GET_CONSULTANT')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/companies/search-by-keyword&quot;)
+    ResponseEntity&lt;List&lt;CompanyDto&gt;&gt; filterCompanyByKeyword(@RequestParam String query) {
+<span class="nc" id="L86">        log.info(&quot;filter Human Resource by keyword = {}&quot;, query);</span>
+<span class="nc" id="L87">        List&lt;CompanyDto&gt; companyDto = companyService.filterCompaniesByKeyword(query);</span>
+<span class="nc" id="L88">        return ResponseEntity.ok().body(companyDto);</span>
+    }
+
+    @ApiOperation(&quot;search company by label&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_COMPANY')&quot;)
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, path = &quot;/v1/companies/by-label&quot;)
+    ResponseEntity&lt;CompanyDto&gt; getCompanyByLabel(@RequestParam String label) {
+<span class="nc" id="L96">        log.info(&quot;search company by label {} &quot;, label);</span>
+<span class="nc" id="L97">        Optional&lt;CompanyDto&gt; companyDto = companyService.getByLabel(label);</span>
+<span class="nc" id="L98">        return companyDto.map(company -&gt; ResponseEntity.ok().body(company)).orElseGet(() -&gt; ResponseEntity.notFound().build());</span>
+    }
+
+    @ApiOperation(&quot;update company by id&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_UPDATE_COMPANY')&quot;)
+    @PutMapping(produces = MediaType.APPLICATION_JSON_VALUE, path = &quot;/v1/companies/{id}&quot;)
+    ResponseEntity&lt;CompanyDto&gt; updateCompany(@PathVariable Long id, @RequestBody @Valid CompanyRequest companyRequest) {
+<span class="nc" id="L106">        log.info(&quot;update company by id {}&quot;, id);</span>
+<span class="nc" id="L107">        validationService.validateUpdateCompany(id, companyRequest);</span>
+<span class="nc" id="L108">        CompanyDto companyDto = companyService.update(id, companyRequest);</span>
+
+<span class="nc" id="L110">        return ResponseEntity.ok().body(companyDto);</span>
+
+    }
+
+    @ApiOperation(&quot;delete company by id&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_CREATE_COMPANY')&quot;)
+    @DeleteMapping(produces = MediaType.APPLICATION_JSON_VALUE, path = &quot;/v1/companies/{id}&quot;)
+    ResponseEntity&lt;Void&gt; deleteCompanyById(@PathVariable Long id) {
+<span class="nc" id="L119">        log.info(&quot;delete Company by id {} &quot;, id);</span>
+<span class="nc" id="L120">        companyService.delete(id);</span>
+<span class="nc" id="L121">        return ResponseEntity.ok().build();</span>
+    }
+
+    @ApiOperation(&quot;get companies statistics&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_GET_COMPANY')&quot;)
+    @GetMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/companies/statistics&quot;)
+    ResponseEntity&lt;List&lt;List&gt;&gt; getCompaniesStatistics() {
+<span class="nc" id="L129">        List&lt;List&gt; stats = companyService.companiesStatistics();</span>
+<span class="nc" id="L130">        return ResponseEntity.ok().body(stats);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

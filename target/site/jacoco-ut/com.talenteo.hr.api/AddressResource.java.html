@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AddressResource.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">hr-ms</a> &gt; <a href="index.source.html" class="el_package">com.talenteo.hr.api</a> &gt; <span class="el_source">AddressResource.java</span></div><h1>AddressResource.java</h1><pre class="source lang-java linenums">package com.talenteo.hr.api;
+
+import com.talenteo.hr.dto.AddressDto;
+import com.talenteo.hr.dto.AddressRequest;
+import com.talenteo.hr.service.AddressService;
+import com.talenteo.hr.service.ValidationService;
+import io.micrometer.core.annotation.Timed;
+import io.swagger.annotations.ApiOperation;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import javax.validation.Valid;
+import java.net.URI;
+
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+
+<span class="fc" id="L22">@Slf4j</span>
+@RestController
+@RequestMapping(&quot;/api&quot;)
+@Validated
+<span class="fc" id="L26">@AllArgsConstructor</span>
+@Timed
+public class AddressResource {
+
+    private final AddressService AddressService;
+    private final ValidationService validationService;
+
+
+    @ApiOperation(&quot;create new address&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_CREATE_CONSULTANT','PERM_CREATE_MANAGER','PERM_CREATE_RECRUITER','PERM_CREATE_CANDIDATE','PERM_CREATE_COMPANY_ADMIN')&quot;)
+    @PostMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/addresses&quot;)
+    ResponseEntity&lt;AddressDto&gt; createAddress(@RequestBody AddressRequest AddressRequest) {
+<span class="fc" id="L39">        log.info(&quot;create new address&quot;);</span>
+<span class="fc" id="L40">        AddressDto AddressDto = AddressService.create(AddressRequest);</span>
+<span class="fc" id="L41">        final URI location = ServletUriComponentsBuilder.fromCurrentServletMapping().path(&quot;/api/v1/addresses/{id}&quot;).build().expand(AddressDto.getId()).toUri();</span>
+<span class="fc" id="L42">        return ResponseEntity.created(location).body(AddressDto);</span>
+    }
+
+
+    @ApiOperation(&quot;update address by id&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_CREATE_CONSULTANT','PERM_CREATE_MANAGER','PERM_CREATE_RECRUITER','PERM_CREATE_CANDIDATE','PERM_CREATE_COMPANY_ADMIN')&quot;)
+    @PutMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/addresses/{id}&quot;)
+    ResponseEntity&lt;AddressDto&gt; updateAddress(@PathVariable Long id, @RequestBody @Valid AddressRequest AddressRequest) {
+<span class="nc" id="L51">        log.info(&quot; update address by id {}&quot;, id);</span>
+<span class="nc" id="L52">        validationService.validateUpdateAddress(id, AddressRequest);</span>
+<span class="nc" id="L53">        AddressDto AddressDto = AddressService.update(id, AddressRequest);</span>
+<span class="nc" id="L54">        return ResponseEntity.ok().body(AddressDto);</span>
+
+    }
+
+    @ApiOperation(&quot;delete address&quot;)
+    @Timed
+    @PreAuthorize(&quot;hasAnyAuthority('PERM_CREATE_CONSULTANT','PERM_CREATE_MANAGER','PERM_CREATE_RECRUITER','PERM_CREATE_CANDIDATE','PERM_CREATE_COMPANY_ADMIN')&quot;)
+    @DeleteMapping(produces = APPLICATION_JSON_VALUE, path = &quot;/v1/addresses/{id}&quot;)
+    ResponseEntity&lt;Void&gt; deleteAddress(@PathVariable Long id) {
+<span class="nc" id="L63">        log.info(&quot;delete address by id {}&quot;, id);</span>
+<span class="nc" id="L64">        AddressService.delete(id);</span>
+<span class="nc" id="L65">        return ResponseEntity.ok().build();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>
