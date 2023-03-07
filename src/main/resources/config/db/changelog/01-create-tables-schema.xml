@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="01" author="imene">
+
+        <comment>Creating tables</comment>
+
+        <createTable tableName="human_resource" remarks="A table to contain all human resources">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints nullable="false" unique="true" primaryKey="true"/>
+            </column>
+            <column name="lastname" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="firstname" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="varchar(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="address" type="BIGINT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="avatar" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="birth_date" type="Date">
+                <constraints nullable="true"/>
+            </column>
+            <column name="phone_number" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="gender" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="visibility" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="supervisor_id" type="BIGINT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="company_entity_id" type="BIGINT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="already_logged_in" type="boolean">
+                <constraints nullable="true"/>
+            </column>
+
+        </createTable>
+
+        <createTable tableName="address" remarks="A table to contain all addresses">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints nullable="false" unique="true" primaryKey="true"/>
+            </column>
+            <column name="address1" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="address2" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="zip_code" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="city" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="country" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+
+        <createTable tableName="company_entity" remarks="A table to contain all company entities">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints nullable="false" unique="true" primaryKey="true"/>
+            </column>
+            <column name="label" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="varchar(255)">
+                <constraints nullable="true" unique="true"/>
+            </column>
+            <column name="phone_number" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="company" type="BIGINT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="address" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+
+        <createTable tableName="company" remarks="A table to contain all companies">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints nullable="false" unique="true" primaryKey="true"/>
+            </column>
+            <column name="label" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="phone_number" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="logo" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="size" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="creation_date" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="activity_field" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_active" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="verification_token" remarks="A table to contain all tokens">
+            <column name="token_id" type="BIGINT" autoIncrement="true">
+                <constraints nullable="false" unique="true" primaryKey="true"/>
+            </column>
+            <column name="confirmation_token" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_date" type="datetime">
+                <constraints nullable="true"/>
+            </column>
+            <column name="human_resource_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="salary_history" remarks="A table to contain sal histo">
+
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints nullable="false" unique="true" primaryKey="true"/>
+            </column>
+            <column name="salary_amount" type="numeric">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="start_date" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_date" type="date">
+                <constraints nullable="true"/>
+            </column>
+            <column name="hr_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+        <createTable tableName="nationality" remarks="A table to contain nationalities">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints nullable="false" unique="true" primaryKey="true"/>
+            </column>
+            <column name="country" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="hr_nationality" remarks="A table to contain nationalities">
+            <column name="hr_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nationality_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="company_entity" baseColumnNames="address"
+                                 constraintName="fk_address_company_entity" referencedTableName="address"
+                                 referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="verification_token" baseColumnNames="human_resource_id"
+                                 constraintName="fk_hr_token" referencedTableName="human_resource"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="company_entity" baseColumnNames="company"
+                                 constraintName="fk_company_entity" referencedTableName="company"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="human_resource" baseColumnNames="address"
+                                 constraintName="fk_address_hr" referencedTableName="address"
+                                 referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="human_resource" baseColumnNames="company_entity_id"
+                                 constraintName="fk_company_entity_hr" referencedTableName="company_entity"
+                                 referencedColumnNames="id"/>
+
+
+        <addForeignKeyConstraint baseTableName="human_resource" baseColumnNames="supervisor_id"
+                                 constraintName="fk_supervisor" referencedTableName="human_resource"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="salary_history" baseColumnNames="hr_id"
+                                 constraintName="fk_hr_salary" referencedTableName="human_resource"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseColumnNames="hr_id" baseTableName="hr_nationality"
+                                 constraintName="fk_human_resource_id_nationality" referencedTableName="human_resource"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseColumnNames="nationality_id" baseTableName="hr_nationality"
+                                 constraintName="fk_nationality_id" referencedTableName="nationality"
+                                 referencedColumnNames="id"/>
+
+
+        <createSequence
+                incrementBy="1"
+                cycle="true"
+                sequenceName="HIBERNATE_SEQUENCE"
+                startValue="100"
+        />
+
+    </changeSet>
+</databaseChangeLog>

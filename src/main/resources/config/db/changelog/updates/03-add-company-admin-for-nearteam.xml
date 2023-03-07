@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="03-human-resources-01" author="iheb" context="postgres">
+
+        <comment>Inserting human resources</comment>
+
+        <insert tableName="human_resource">
+            <column name="id" value="3" type="BIGINT"/>
+            <column name="lastname" value="Ben Gheneya"/>
+            <column name="firstname" value="Fatma"/>
+            <column name="email" value="fatma.benghenaya@nearteam.fr"/>
+            <column name="avatar" value="https://www.freelance-informatique.fr/images/avatars/woman4.png"/>
+            <column name="gender" value="Female"/>
+            <column name="role" value="Company_Admin"/>
+            <column name="birth_date" valueDate="1981-05-11"/>
+            <column name="phone_number" value="+33663002132"/>
+            <column name="address" value="1"/>
+            <column name="company_entity_id" value="1"/>
+            <column name="already_logged_in" value="true"/>
+        </insert>
+    </changeSet>
+
+
+</databaseChangeLog>

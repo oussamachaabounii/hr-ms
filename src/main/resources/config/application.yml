@@ -1,0 +1,163 @@
+server:
+  port: 8092
+
+#Admin configuration
+info:
+  name: @app.id@
+  description: @app.id@
+  version: @pom.version@
+  stage: local
+
+
+spring:
+  application:
+    id: @app.id@
+    name: @app.id@
+  jpa:
+    properties:
+      hibernate:
+        default_schema: ${datasource.db.schema}
+        temp:
+          use_jdbc_metadata_defaults: false
+        jdbc:
+          lob:
+            non_contextual_creation: true
+    database-platform: ${datasource.db.platform}
+  datasource:
+    url: ${datasource.url}
+    username: ${datasource.username}
+    password: ${datasource.password}
+    driver-class-name: ${datasource.db.driver}
+  liquibase:
+    default-schema: ${datasource.db.schema}
+    change-log: classpath:config/db/db.changelog-master.xml
+    contexts: postgres
+  profiles.active: local
+  boot:
+    admin:
+      client:
+        url: ${boot.admin.client.url}
+        username: ${boot.admin.client.username}
+        password: ${boot.admin.client.password}
+        instance:
+          metadata:
+            enable-oauth2: true
+
+  security:
+    actuator:
+      password: easymsActuatorPass!
+
+front:
+  mail.confirm:
+    url: ${mail.confirm.url:/confirm-mail/}
+  url: http://localhost:4200
+
+hr:
+  ms.url: http://localhost:8092
+
+oauth2:
+  ms.url: http://localhost:2000
+
+notification:
+  ms.url: http://localhost:8090
+
+td:
+  ms.url: http://localhost:8093
+
+career:
+  ms.url: http://localhost:8094
+
+mission:
+  ms.url: http://localhost:8095
+
+search:
+  ms.url: http://localhost:8102
+
+security:
+  oauth2:
+    resource:
+      jwt:
+        key-value: |
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA39Zg3MUX3hIi7UnAPnZOerwpHMX7jC4BitiwCM11nSpawR/NvQGaI6Ej1NURHgn9kYpuoVUplS//GyTMTHd3G4h0Dh89tE8uR7V6XNw9qSJsYXF02xJ2MZxeP2G9UdEvWq13kJzxi+qXziHRPCAK5GVDOxEZmxILUA8kLw7i3d8T3g8+hAge5B0sc32wbF1NhRa+u7vK2uSIx+bxyah48Qw/y0Xqk+eLtcsVnXqD0cwEfgoMrcxfs1L/3vYdQ9U0Q/tvWnPrK2HFaGzPfWPr86ieB+yotnec0I9G60Rekq8ebW1vYqZCEG1BpELN9cVTHwSJ17iWHihfMqMrV/dIcwIDAQAB
+          -----END PUBLIC KEY-----
+
+azure-storage:
+  client-id: @azure.storage.clientId@
+  client-secret: @azure.storage.clientSecret@
+  tenant-id: @azure.keyvault.tenantId@
+  endpoint:  @azure.storage.endpoint@
+
+swagger:
+  paths: /api.*
+  securityDefinitions:
+    oauthSecurity:
+      type: oauth2
+      tokenUrl: http://localhost:2000/oauth/token
+      flow: password
+      scopes:
+
+easyms:
+  secured:
+    oauth2: true
+
+  logging:
+    logstash: # Forward logs to logstash over a socket, used by LoggingConfig
+      enabled: false
+  security:
+    actuator:
+      password: easymsActuatorPass!
+
+management.endpoints.web.exposure.include: "*"
+
+---
+spring:
+  profiles: sample
+
+liquibase.contexts: data
+
+---
+spring:
+  liquibase:
+    default-schema: hr
+    contexts: testData
+  profiles: h2
+  jpa:
+    properties:
+      hibernate:
+        default_schema: hr
+    database-platform: org.hibernate.dialect.H2Dialect
+  datasource:
+    url: jdbc:h2:mem:hrdb;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:config/db/h2-init.sql';
+    username: hr
+    password: secret
+    driver-class-name: org.h2.Driver
+  h2.console:
+    enabled: true
+    path: /h2-console
+
+---
+spring:
+  profiles: test
+  jpa:
+    hibernate.ddl-auto: none
+  h2.console.enabled: false
+
+spring.profiles.include:
+  - h2
+
+liquibase.contexts: testData
+
+---
+spring:
+  profiles: azure-vault
+
+azure:
+  keyvault:
+    enabled: true
+    uri: @azure.keyvault.secureUri@
+    client-id: @azure.keyvault.clientId@
+    tenant-id: @azure.keyvault.tenantId@
+    client-key: @azure.keyvault.clientKey@
+    token-acquire-timeout-seconds: 60
+    refresh-interval: 1800000

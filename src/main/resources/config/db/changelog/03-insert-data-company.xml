@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="03" author="imene">
+
+        <comment>Inserting Companies</comment>
+
+        <insert tableName="company">
+            <column name="id" type="BIGINT" value="1">
+            </column>
+            <column name="label" value="Nearteam">
+            </column>
+            <column name="phone_number" value="+21671569852">
+            </column>
+            <column name="logo" value="https://nearteam.fr/sites/default/files/logo-ntt-trans_0.png">
+            </column>
+            <column name="description" value="NearTeam est une société de conseil et d’ingénierie spécialisée en technologies Open source (Java/J2EE, PHP Open source) .">
+            </column>
+            <column name="size" value="10-20">
+            </column>
+            <column name="type" value="Startup">
+            </column>
+            <column name="creation_date" valueDate="2009-08-16">
+            </column>
+            <column name="activity_field" value="Développement logiciel">
+            </column>
+            <column name="is_active" value="true">
+            </column>
+
+        </insert>
+
+        <insert tableName="company">
+            <column name="id" type="BIGINT" value="2">
+            </column>
+            <column name="label" value="Harington">
+            </column>
+            <column name="phone_number" value="+330147372929">
+            </column>
+            <column name="logo" value="https://www.harington.fr/sites/default/files/2019-05/logo_harington_blanc_2.png">
+            </column>
+            <column name="description" value="Harington est un cabinet de conseil et de services technologiques créée en 2008. C’est aujourd’hui 250 collaborateurs tech et digital natives, et une dynamique de croissance régulière de plus de 20% par an.">
+            </column>
+            <column name="size" value="201-500">
+            </column>
+            <column name="type" value="Partnership">
+            </column>
+            <column name="creation_date" valueDate="2008-08-16">
+            </column>
+            <column name="activity_field" value="Information Technology and Services">
+            </column>
+            <column name="is_active" value="true">
+            </column>
+
+        </insert>
+
+    </changeSet>
+
+</databaseChangeLog>
