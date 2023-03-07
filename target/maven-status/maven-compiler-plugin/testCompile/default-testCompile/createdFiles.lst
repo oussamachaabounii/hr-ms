@@ -1,0 +1,10 @@
+com\talenteo\hr\api\SalaryHistoryControllerTest.class
+com\talenteo\hr\service\HumanResourceServiceTest.class
+com\talenteo\hr\api\AddressResourceTest.class
+com\talenteo\hr\service\AddressServiceTest.class
+com\talenteo\hr\service\CompanyServiceTest.class
+com\talenteo\hr\api\CompanyResourceTest.class
+com\talenteo\hr\api\HRResourceTest.class
+com\talenteo\hr\service\SalaryHistoryServiceTest.class
+com\talenteo\hr\api\CompanyEntityResourceTest.class
+com\talenteo\hr\service\ValidationServiceTest.class
