@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="001" author="imene">
+        <comment>Updating company_entity</comment>
+        <sql>
+            ALTER TABLE hr.company_entity ADD is_active boolean
+        </sql>
+        <sql>
+            UPDATE hr.company_entity SET is_active = 'true' WHERE ID = 1;
+        </sql>
+        <sql>
+            UPDATE hr.company_entity SET is_active = 'true' WHERE ID = 2;
+        </sql>
+        <sql>
+            UPDATE hr.company_entity SET is_active = 'true' WHERE ID = 3;
+        </sql>
+
+    </changeSet>
+
+</databaseChangeLog>

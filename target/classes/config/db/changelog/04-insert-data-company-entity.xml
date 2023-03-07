@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="02" author="imene">
+        <comment>Inserting Company Entity</comment>
+        <insert tableName="company_entity">
+            <column name="id" value="1" type="BIGINT"/>
+            <column name="label" value="Nearteam Tunisie"/>
+            <column name="email" value="contact.tn@nearteam.fr"/>
+            <column name="phone_number" value="+21671569852"/>
+            <column name="address" value="1"/>
+            <column name="company" value="1"/>
+        </insert>
+
+        <insert tableName="company_entity">
+            <column name="id" value="2" type="BIGINT"/>
+            <column name="label" value="Nearteam France"/>
+            <column name="email" value="contact.fr@nearteam.fr"/>
+            <column name="phone_number" value="+21671569852"/>
+            <column name="address" value="2"/>
+            <column name="company" value="1"/>
+        </insert>
+
+        <insert tableName="company_entity">
+            <column name="id" value="3" type="BIGINT"/>
+            <column name="label" value="Harington Paris"/>
+            <column name="email" value="contact@harington.fr"/>
+            <column name="phone_number" value="+21671569852"/>
+            <column name="address" value="1"/>
+            <column name="company" value="2" />
+        </insert>
+
+    </changeSet>
+
+</databaseChangeLog>

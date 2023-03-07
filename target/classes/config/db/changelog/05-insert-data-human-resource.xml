@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="05-human-resources-01" author="iheb" context="postgres">
+
+        <comment>Inserting human resources</comment>
+
+        <insert tableName="human_resource">
+            <column name="id" value="1" type="BIGINT"/>
+            <column name="lastname" value="Bessa"/>
+            <column name="firstname" value="Anis"/>
+            <column name="email" value="admin-client@yopmail.com"/>
+            <column name="avatar" value="https://captivaostalenteo.blob.core.windows.net/users-avatars/1593530101130.png"/>
+            <column name="gender" value="Male"/>
+            <column name="role" value="Manager"/>
+            <column name="birth_date" valueDate="1980-05-11"/>
+            <column name="phone_number" value="+33663002132"/>
+            <column name="address" value="1"/>
+            <column name="company_entity_id" value="1"/>
+            <column name="already_logged_in" value="true"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="05-human-resources-02" author="iheb" context="testData">
+        <comment>Inserting human resources test data</comment>
+
+        <insert tableName="human_resource">
+            <column name="id" value="2" type="BIGINT"/>
+            <column name="lastname" value="Doe"/>
+            <column name="firstname" value="Jane"/>
+            <column name="email" value="admin-plateforme@yopmail.com"/>
+            <column name="avatar" value="https://www.freelance-informatique.fr/images/avatars/woman4.png"/>
+            <column name="gender" value="Female"/>
+            <column name="role" value="Manager"/>
+            <column name="birth_date" valueDate="1991-01-09"/>
+            <column name="phone_number" value="51920996"/>
+            <column name="address" value="1"/>
+            <column name="company_entity_id" value="3"/>
+            <column name="already_logged_in" value="true"/>
+        </insert>
+        <insert tableName="human_resource">
+            <column name="id" value="3" type="BIGINT"/>
+            <column name="lastname" value="Doe"/>
+            <column name="firstname" value="John"/>
+            <column name="email" value="admin@yopmail.com"/>
+            <column name="avatar" value="https://www.freelance-informatique.fr/images/avatars/man2.png"/>
+            <column name="gender" value="Male"/>
+            <column name="role" value="Recruiter"/>
+            <column name="birth_date" valueDate="1980-08-16"/>
+            <column name="phone_number" value="51920996"/>
+            <column name="address" value="1"/>
+            <column name="company_entity_id" value="2"/>
+            <column name="already_logged_in" value="true"/>
+        </insert>
+
+        <insert tableName="human_resource">
+            <column name="id" value="4" type="BIGINT"/>
+            <column name="lastname" value="Menaa"/>
+            <column name="firstname" value="Mondher"/>
+            <column name="email" value="mondher@gmail.com"/>
+            <column name="avatar" value="https://www.freelance-informatique.fr/images/avatars/man2.png"/>
+            <column name="gender" value="Male"/>
+            <column name="role" value="Consultant"/>
+            <column name="birth_date" valueDate="1996-08-16"/>
+            <column name="phone_number" value="51920996"/>
+            <column name="address" value="1"/>
+            <column name="company_entity_id" value="2"/>
+            <column name="visibility" value="Entity"/>
+            <column name="supervisor_id" value="2"/>
+            <column name="already_logged_in" value="true"/>
+        </insert>
+
+        <insert tableName="human_resource">
+            <column name="id" value="5" type="BIGINT"/>
+            <column name="lastname" value="Rouissi"/>
+            <column name="firstname" value="Imene"/>
+            <column name="email" value="imene@gmail.com"/>
+            <column name="avatar" value="https://www.freelance-informatique.fr/images/avatars/woman4.png"/>
+            <column name="gender" value="Male"/>
+            <column name="role" value="Consultant"/>
+            <column name="birth_date" valueDate="1996-08-16"/>
+            <column name="phone_number" value="51920996"/>
+            <column name="address" value="1"/>
+            <column name="company_entity_id" value="1"/>
+            <column name="visibility" value="Entity"/>
+            <column name="already_logged_in" value="true"/>
+        </insert>
+
+        <insert tableName="human_resource">
+            <column name="id" value="6" type="BIGINT"/>
+            <column name="lastname" value="Lengliz"/>
+            <column name="firstname" value="Skander"/>
+            <column name="email" value="skander@gmail.com"/>
+            <column name="avatar" value="https://www.freelance-informatique.fr/images/avatars/man2.png"/>
+            <column name="gender" value="Male"/>
+            <column name="role" value="Consultant"/>
+            <column name="birth_date" valueDate="1996-08-16"/>
+            <column name="phone_number" value="51920996"/>
+            <column name="address" value="1"/>
+            <column name="company_entity_id" value="2"/>
+            <column name="visibility" value="Group"/>
+            <column name="already_logged_in" value="true"/>
+        </insert>
+
+
+    </changeSet>
+
+</databaseChangeLog>

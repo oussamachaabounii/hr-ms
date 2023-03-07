@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <include file="changelog/01-create-tables-schema.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/02-insert-data-address.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/03-insert-data-company.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/04-insert-data-company-entity.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/05-insert-data-human-resource.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/06-insert-data-nationality.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/07-insert-data-salary-history.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/08-insert-data-hr-nationality.xml" relativeToChangelogFile="true"/>
+
+    <include file="changelog/updates/01-add-company-admin.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/updates/02-update-role-of-first-hr.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/updates/03-add-company-admin-for-nearteam.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/update/01-IRO-update-data-company-entity.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/update/02-IRO-update-data-hr.xml" relativeToChangelogFile="true"/>
+
+</databaseChangeLog>

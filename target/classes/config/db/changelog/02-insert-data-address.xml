@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="02" author="imene">
+
+        <comment>Inserting Addresses</comment>
+        <insert tableName="address">
+            <column name="id" value="1" type="BIGINT">
+            </column>
+            <column name="address1" value="Centre urbain nord">
+            </column>
+            <column name="address2" value="Immeuble Mirmar">
+            </column>
+            <column name="zip_code" value="1082">
+            </column>
+            <column name="city" value="Tunis">
+            </column>
+            <column name="country" value="Tunisie"/>
+        </insert>
+
+        <insert tableName="address">
+            <column name="id" value="2" type="BIGINT">
+            </column>
+            <column name="address1" value="Paris">
+            </column>
+            <column name="address2" value="Immeuble">
+            </column>
+            <column name="zip_code" value="1082">
+            </column>
+            <column name="city" value="Paris">
+            </column>
+            <column name="country" value="France"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>
