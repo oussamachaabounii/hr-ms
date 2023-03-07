@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.talenteo.hr.api.SalaryHistoryControllerTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 8.07 s - in com.talenteo.hr.api.SalaryHistoryControllerTest
